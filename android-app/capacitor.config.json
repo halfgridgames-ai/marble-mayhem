@@ -1,0 +1,19 @@
+{
+  "appId": "com.halfgridgames.marblemayhem",
+  "appName": "Marble Mayhem",
+  "webDir": "www",
+  "backgroundColor": "#141c3a",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#141c3a"
+  },
+  "plugins": {
+    "SystemBars": {
+      "hidden": true,
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

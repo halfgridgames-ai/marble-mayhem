@@ -1,0 +1,16 @@
+{
+  "name": "Marble Mayhem: Downhill Dash",
+  "short_name": "Marbles",
+  "description": "Downhill marble racing with items, Grand Prix cups and unlockable marbles.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape-primary",
+  "background_color": "#141c3a",
+  "theme_color": "#141c3a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

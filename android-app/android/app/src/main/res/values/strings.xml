@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Marble Mayhem</string>
+    <string name="title_activity_main">Marble Mayhem</string>
+    <string name="package_name">com.halfgridgames.marblemayhem</string>
+    <string name="custom_url_scheme">com.halfgridgames.marblemayhem</string>
+</resources>
