@@ -1171,7 +1171,10 @@ function buildScene(track) {
   const divMat = new THREE.MeshStandardMaterial({ color: '#fbf7ef', roughness: 0.4 });
   const boostMat = new THREE.MeshBasicMaterial({ color: '#7dfcff', transparent: true, opacity: 0.85, side: THREE.DoubleSide });
   const WHITE = new THREE.Color('#ffffff');
-  // channel meshes, split at gaps
+  // channel meshes, split at gaps and into short pieces
+  const CHUNK = 10;
+  trackChunks = [];
+  const chunkFor = (a, b) => { let c = trackChunks.find(c => c.a === a && c.b === b); if (!c) { c = { a, b, meshes: [], fade: 1, want: 1 }; trackChunks.push(c); } return c; };
   let i = 0;
   while (i < S.length) {
     if (S[i].gap) { i++; continue; }
@@ -1202,17 +1205,31 @@ function buildScene(track) {
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
       geo.setIndex(idx); geo.computeVertexNormals();
-      const mesh = new THREE.Mesh(geo, shell ? shellMat : trackMat);
-      mesh.castShadow = true; mesh.receiveShadow = !shell;
-      trackGroup.add(mesh);
+      // split into short pieces (normals come from the whole run, so there are no seams) so the camera can
+      // fade just the piece that gets between it and the marble
+      const nrm = geo.getAttribute('normal').array;
+      for (let c0 = 0; c0 < run.length - 1; c0 += CHUNK) {
+        const c1 = Math.min(run.length - 1, c0 + CHUNK), n = c1 - c0 + 1;
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos.slice(c0 * P * 3, (c1 + 1) * P * 3), 3));
+        g.setAttribute('color', new THREE.BufferAttribute(col.slice(c0 * P * 3, (c1 + 1) * P * 3), 3));
+        g.setAttribute('normal', new THREE.BufferAttribute(nrm.slice(c0 * P * 3, (c1 + 1) * P * 3), 3));
+        const ci = [];
+        for (let a = 0; a < n - 1; a++) for (let b = 0; b < P - 1; b++) { const q = a * P + b; ci.push(q, q + P, q + 1, q + 1, q + P, q + P + 1); }
+        g.setIndex(ci);
+        const mesh = new THREE.Mesh(g, shell ? shellMat : trackMat);
+        mesh.castShadow = true; mesh.receiveShadow = !shell;
+        trackGroup.add(mesh); chunkFor(i + c0, i + c1).meshes.push(mesh);
+      }
+      geo.dispose();
     }
     // rounded rims along both wall tops, plus end caps
-    if (run.length > 2) for (const side of [-1, 1]) {
-      const pts = [];
-      for (let a = 0; a < run.length; a += 2) { const s = run[a]; pts.push(s.p.clone().addScaledVector(s.B, side * (s.W + s.Rc + 0.1)).addScaledVector(s.N, s.Rc + s.wall)); }
-      const l = run[run.length - 1]; pts.push(l.p.clone().addScaledVector(l.B, side * (l.W + l.Rc + 0.1)).addScaledVector(l.N, l.Rc + l.wall));
+    if (run.length > 2) for (let c0 = 0; c0 < run.length - 1; c0 += CHUNK) for (const side of [-1, 1]) {
+      const c1 = Math.min(run.length - 1, c0 + CHUNK), pts = [];
+      for (let a = c0; a <= c1; a++) { const s = run[a]; pts.push(s.p.clone().addScaledVector(s.B, side * (s.W + s.Rc + 0.1)).addScaledVector(s.N, s.Rc + s.wall)); }
+      if (pts.length < 2) continue;
       const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.15, 8, false), rimMat);
-      tube.castShadow = true; trackGroup.add(tube);
+      tube.castShadow = true; trackGroup.add(tube); chunkFor(i + c0, i + c1).meshes.push(tube);
     }
     i = j;
   }
@@ -1308,36 +1325,7 @@ function buildScene(track) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
     const dome = new THREE.Mesh(g, glassMat); dome.renderOrder = 2; trackGroup.add(dome);
   }
-  // supports (skip where another part of the track runs underneath)
   const supMat = new THREE.MeshStandardMaterial({ color: '#e9e1d2', roughness: 0.8 });
-  const inHelix = S.map(s => s.helix);
-  for (let k = 6; k < S.length; k += 14) {
-    const s = S[k]; if (s.gap || inHelix[k]) continue;
-    const bottom = s.p.clone().addScaledVector(s.N, -0.1);
-    let blocked = false;
-    for (let q = 0; q < S.length; q += 2) {
-      if (Math.abs(q - k) < 12) continue;
-      const o = S[q].p; if (o.y < bottom.y - 1 && Math.hypot(o.x - bottom.x, o.z - bottom.z) < S[q].W + S[q].Rc + 1.2) { blocked = true; break; }
-    }
-    if (blocked) continue;
-    const h = bottom.y - groundY;
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, h, 8), supMat);
-    post.position.set(bottom.x, groundY + h / 2, bottom.z); post.castShadow = true;
-    trackGroup.add(post);
-  }
-  // spirals: a few slim posts around the outside, nothing inside the spiral or across the camera's view
-  for (const [a, b] of track.helices) {
-    const c = new V3(); let top = -Infinity;
-    for (let k = a; k < b; k++) { c.add(S[k].p); top = Math.max(top, S[k].p.y); }
-    c.divideScalar(b - a);
-    let rad = 0; for (let k = a; k < b; k++) rad = Math.max(rad, Math.hypot(S[k].p.x - c.x, S[k].p.z - c.z) + S[k].W + S[k].Rc);
-    const h = top - groundY - 0.4;
-    for (let i = 0; i < 6; i++) {
-      const ang = i / 6 * TAU, x = c.x + Math.cos(ang) * (rad + 0.5), z = c.z + Math.sin(ang) * (rad + 0.5);
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, h, 8), supMat);
-      post.position.set(x, groundY + h / 2, z); post.castShadow = true; trackGroup.add(post);
-    }
-  }
   // obstacles
   const pegMat = new THREE.MeshStandardMaterial({ color: '#fdf6e8', roughness: 0.4 });
   const bumpMat = () => new THREE.MeshStandardMaterial({ color: '#ff4d6d', emissive: '#ff2a55', emissiveIntensity: 0.15, roughness: 0.3 });
@@ -1885,7 +1873,7 @@ function buildArenaScene(tr) {
     trackGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); });
   }
   trackGroup = new THREE.Group();
-  sweepMeshes = []; bumperMeshes = []; popMeshes = []; slideMeshes = []; gateMesh = null;
+  sweepMeshes = []; bumperMeshes = []; popMeshes = []; slideMeshes = []; gateMesh = null; trackChunks = [];
   const th = THEMES[tr.def.theme] || THEMES.neon, rim = ARENA.rim;
   // the funnel: one lathe per ring, each its own colour round the rainbow, with a checker of light and dark tiles
   tr.rings = [];
@@ -3430,7 +3418,36 @@ function renderItemSlot(me) {
 // ---------- main loop ----------
 let last = performance.now(), acc = 0, camInit = true, menuAng = 0;
 const camFwd = new V3(0, 0, 1), camLook = new V3();
-let spiralCam = 0;   // 0..1 blend into the spiral camera, which rides the track just behind the marble
+let trackChunks = [];   // channel pieces {a, b, meshes, fade}; faded when they block the camera
+const camRay = new THREE.Raycaster(), _camDir = new V3(), _camO = new V3(), _camLift = new V3();
+// Hits along the line from the marble to a camera spot: returns the nearest blocking piece that is part of the
+// track the marble is on now (the camera pulls in for those) and marks pieces further along or elsewhere to fade.
+function camOcclusion(from, to, idx, mark) {
+  _camDir.subVectors(to, from); const d = _camDir.length(); if (d < 0.01) return Infinity;
+  camRay.set(from, _camDir.divideScalar(d)); camRay.far = d + 0.3;
+  let near = Infinity;
+  for (const c of trackChunks) {
+    const own = idx >= c.a - 1 && idx <= c.b + 1;
+    const hit = camRay.intersectObjects(c.meshes, false)[0];
+    if (!hit) continue;
+    if (!mark) { if (own || (idx - c.b < 26 && c.a - idx < 6)) near = Math.min(near, hit.distance); }
+    else if (!own || hit.distance > 3) c.want = 0.14;   // the piece under the marble only fades for a wall well behind it
+  }
+  return near;
+}
+function fadeChunks(dt) {
+  for (const c of trackChunks) {
+    const k = 1 - Math.exp(-dt * (c.want < c.fade ? 14 : 5));
+    c.fade += (c.want - c.fade) * k; if (Math.abs(c.fade - c.want) < 0.01) c.fade = c.want;
+    const on = c.fade < 0.99;
+    for (const m of c.meshes) {
+      if (on && !m.userData.ghost) { m.userData.base = m.material; m.userData.ghost = m.material.clone(); m.userData.ghost.transparent = true; m.userData.ghost.depthWrite = false; }
+      if (m.userData.ghost) { m.material = on ? m.userData.ghost : m.userData.base; m.userData.ghost.opacity = c.fade; m.castShadow = !on || c.fade > 0.6; }
+    }
+    c.want = 1;
+  }
+}
+let spiralCam = 0, camLiftS = 0;   // 0..1 blend into the spiral camera, which rides the track just behind the marble
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (track) update(dt);
@@ -3557,10 +3574,24 @@ function update(dt) {
       const a = S[Math.min(S.length - 1, me.idx + 7)];
       look.lerp(a.p.clone().addScaledVector(a.N, 0.6), spiralCam * 0.6);
     }
+    // keep the track out of the shot: rise over nearby walls, fade any other piece that gets in the way
+    _camO.copy(me.p).addScaledVector(UP, 0.35);
+    if (!me.out && spiralCam < 0.5) {
+      // lift the camera over a nearby wall on tight bends; anything still in the way fades out below
+      let need = 0;
+      if (camOcclusion(_camO, want, me.idx, false) < Infinity) {
+        need = 4.5;
+        for (const up of [1.5, 3]) { _camLift.copy(want).addScaledVector(UP, up); if (camOcclusion(_camO, _camLift, me.idx, false) === Infinity) { need = up; break; } }
+      }
+      camLiftS += (need - camLiftS) * (1 - Math.exp(-dt * (need > camLiftS ? 6 : 1.5)));
+      want.addScaledVector(UP, camLiftS);
+    } else camLiftS *= Math.exp(-dt * 2);
     if (camInit) { camera.position.copy(want); camLook.copy(look); camInit = false; }
     if (!me.out) camera.position.lerp(want, 1 - Math.exp(-dt * (5 + spiralCam * 7)));
     camLook.lerp(look, 1 - Math.exp(-dt * 9));
     camera.lookAt(camLook);
+    camOcclusion(_camO, camera.position, me.idx, true);
+    fadeChunks(dt);
     applyShake(dt);
     const fovWant = 62 + clamp((me.v.length() - 12) * 0.45, 0, 10) + (me.rocketT > 0 ? 9 : 0);
     if (Math.abs(camera.fov - fovWant) > 0.05) { camera.fov += (fovWant - camera.fov) * (1 - Math.exp(-dt * 4)); camera.updateProjectionMatrix(); }
@@ -3612,7 +3643,7 @@ function update(dt) {
 }
 
 // headless test hook: run a full race with every marble on autopilot
-window.__dbg = { econ, TRACKS, buildTrack, randomCourse, DS, live: () => ({ marbles, track, state, raceTime }) };
+window.__dbg = { econ, TRACKS, buildTrack, randomCourse, DS, live: () => ({ marbles, track, state, raceTime, chunks: trackChunks }) };
 window.__simRace = (ti, maxT = 150, seed) => {
   simulating = !window.__asPlayer;
   selTrack = ti; loadTrack(ti);
