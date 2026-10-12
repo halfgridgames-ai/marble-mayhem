@@ -284,6 +284,9 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 @media (max-width: 640px) and (min-height: 501px) {   /* phone held upright: map on the right, standings tucked under it */
   #hud .minibox { left: auto; right: 12px; transform: none; }
   #hud .standings { top: calc(var(--top) + 106px); }
+  .coarse #hud .itemslot { left: 28px; bottom: calc(var(--bot) + 104px); }   /* item above bump, clear of the joystick */
+  .promo .big-emoji { font-size: 40px; top: 6px; right: 8px; }
+  .promo h3, #shopBox p { padding-right: 44px; }
 }
 /* portrait-only game: on a phone held sideways, ask to turn it upright */
 #rotate { display: none; position: fixed; inset: 0; z-index: 1000; background: #141c3a; color: #fff; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: var(--display); font-size: 26px; text-align: center; }
