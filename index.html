@@ -116,6 +116,25 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 .ghost.small { padding: 8px 12px; font-size: 13px; }
 .trophy { font-weight: 800; padding: 1px 8px; border-radius: 99px; color: #2a1a00; }
 .trophy.t1 { background: #ffd23f; } .trophy.t2 { background: #d6dde8; } .trophy.t3 { background: #e0a06a; }
+/* trophy cabinet, track medals and best-time boards */
+.cabinet { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin: 4px 0 12px; }
+.cabinet .tr { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 14px; background: rgba(255,255,255,0.05); font-size: 11px; font-weight: 800; text-align: center; color: var(--ink-dim); }
+.cabinet .tr .cup { position: relative; width: 46px; height: 46px; display: grid; place-items: center; font-size: 22px; border-radius: 50%; background: rgba(255,255,255,0.06); filter: grayscale(1); opacity: 0.45; }
+.cabinet .tr.t1 .cup { background: radial-gradient(circle at 35% 30%, #fff6c0, #ffd23f 55%, #c9940a); filter: none; opacity: 1; box-shadow: 0 0 14px rgba(255,210,63,0.6); }
+.cabinet .tr.t2 .cup { background: radial-gradient(circle at 35% 30%, #ffffff, #d6dde8 55%, #8a96a8); filter: none; opacity: 1; }
+.cabinet .tr.t3 .cup { background: radial-gradient(circle at 35% 30%, #ffe0c0, #e0a06a 55%, #9a5a2a); filter: none; opacity: 1; }
+.cabinet .tr:not(.t1):not(.t2):not(.t3) b { opacity: 0.6; }
+.cabinet .tr b { color: var(--ink); font-size: 11px; line-height: 1.15; }
+.trk-ico { font-size: 15px; margin-right: 2px; }
+.medal { font-size: 15px; }
+.board { margin: 10px 0 4px; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 10px 14px; }
+.board h3 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 18px; }
+.board ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.board li { display: grid; grid-template-columns: 26px 16px 1fr auto; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+.board li i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.board li.me { color: var(--gold); }
+.board li.empty { display: block; }
+.board .sub { font-weight: 600; }
 .cupl li { grid-template-columns: 34px 18px 1fr auto; }
 .podium { display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 10px; margin: 12px 0 16px; }
 .podium .step { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; font-weight: 700; font-size: 13px; color: var(--ink-dim); }
@@ -329,20 +348,22 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
       </div>
       <div class="label big" id="listLabel">Pick a course</div>
       <p class="modehelp" id="modeHelp"></p>
+      <div class="cabinet" id="cabinet" hidden></div>
       <div class="tracks" id="trackList"></div>
+      <div class="board" id="trackBoard" hidden></div>
       <div class="tracks" id="cupList" hidden></div>
       <div id="onlinePanel" hidden>
         <p class="msg" id="onMsg" role="status"></p>
         <div id="onOut">
           <div class="label">Your name</div>
           <input class="field" id="onName" maxlength="14" autocomplete="nickname">
-          <div class="row"><button class="go" id="onCreate">Create room</button></div>
+          <div class="row"><button class="go" id="onCreate">Create room</button><button class="go duel" id="onDuel">Create 1v1 room</button></div>
           <div class="label">Or join a friend's room</div>
           <div class="row"><input class="field code" id="onCode" maxlength="4" placeholder="CODE" autocapitalize="characters" autocomplete="off"><button class="ghost" id="onJoin">Join</button></div>
-          <p class="sub">Up to 8 players. Empty places are filled with computer marbles. Online races use equal stats for everyone, so upgrades and perks don't count here.</p>
+          <p class="sub">A room takes up to 8 players, and empty places are filled with computer marbles. A 1v1 room is just you and one friend, head to head with no computer marbles. Online races use equal stats for everyone, so upgrades and perks don't count here.</p>
         </div>
         <div id="onIn" hidden>
-          <div class="roomcode"><span class="sub">Room code</span><b id="onRoom"></b></div>
+          <div class="roomcode"><span class="sub" id="onRoomKind">Room code</span><b id="onRoom"></b></div>
           <div class="label">Players</div>
           <ol class="players" id="onPlayers"></ol>
           <p class="sub" id="onHint"></p>
@@ -423,6 +444,7 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
       <p class="tag" id="rSub"></p>
       <div class="earn" id="rEarn"></div>
       <ol id="rList"></ol>
+      <div class="board" id="rBoard" hidden></div>
       <div id="rCup" hidden><div class="label" id="rCupTitle"></div><ol id="rCupList" class="cupl"></ol></div>
       <div class="row">
         <button class="go" id="btnAgain">Race again</button>
@@ -521,12 +543,18 @@ const UPGRADES = [
 const PLACE_PAY = [120, 85, 65, 50, 40, 30, 25, 20];
 const GP_POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
 const CUPS = [
-  { id: 'acorn', name: 'Acorn Cup', diff: 'Medium', dc: 'd-med', tracks: [0, 5, 3, 1], blurb: 'Forest, neon arcade, glacier ice and the spiral tower.' },
-  { id: 'summit', name: 'Summit Cup', diff: 'Hard', dc: 'd-hard', tracks: [4, 2, 6, 1], blurb: 'Hairpins, desert freefalls, the sunset coaster and the tower.' },
-  { id: 'chaos', name: 'Chaos Cup', diff: 'Surprise', dc: 'd-rand', tracks: [7, 7, 7, 7], blurb: 'Four random courses nobody has seen before.' },
+  { id: 'sprout', name: 'Sprout Cup', diff: 'Easy', dc: 'd-easy', tracks: [9, 13, 26, 10], trophy: { name: 'Golden Sprout', icon: '🌱' }, blurb: 'Marsh mud, beach waves, mountain bends and candy stairs.' },
+  { id: 'acorn', name: 'Acorn Cup', diff: 'Medium', dc: 'd-med', tracks: [0, 5, 3, 1], trophy: { name: 'Acorn Crown', icon: '🌰' }, blurb: 'Forest, neon arcade, glacier ice and the spiral tower.' },
+  { id: 'sugar', name: 'Sugar Rush Cup', diff: 'Medium', dc: 'd-med', tracks: [18, 23, 15, 5], trophy: { name: 'Gumdrop Goblet', icon: '🍬' }, blurb: 'Candy spinners, lagoon loops, neon pipes and the pinball arcade.' },
+  { id: 'frontier', name: 'Frontier Cup', diff: 'Medium', dc: 'd-med', tracks: [17, 14, 22, 19], trophy: { name: 'Explorer\'s Compass', icon: '🧭' }, blurb: 'Red-rock mesas, temple steps, frozen falls and the magma spiral.' },
+  { id: 'summit', name: 'Summit Cup', diff: 'Hard', dc: 'd-hard', tracks: [4, 2, 6, 1], trophy: { name: 'Summit Star', icon: '⛰️' }, blurb: 'Hairpins, desert freefalls, the sunset coaster and the tower.' },
+  { id: 'inferno', name: 'Inferno Cup', diff: 'Hard', dc: 'd-hard', tracks: [11, 16, 21, 2], trophy: { name: 'Blazing Chalice', icon: '🔥' }, blurb: 'Lava slabs, an icy avalanche, the treetop trail and the canyon.' },
+  { id: 'galaxy', name: 'Galaxy Cup', diff: 'Hard', dc: 'd-hard', tracks: [12, 20, 25, 24], trophy: { name: 'Comet Crown', icon: '☄️' }, blurb: 'Orbit station, comet chute, pinball palace and thunder run.' },
+  { id: 'chaos', name: 'Chaos Cup', diff: 'Surprise', dc: 'd-rand', tracks: [7, 7, 7, 7], trophy: { name: 'Chaos Cube', icon: '🎲' }, blurb: 'Four random courses nobody has seen before.' },
 ];
 const CUP_PRIZE = [400, 250, 150];
 const DIFF_MUL = { Easy: 1, Medium: 1.2, Hard: 1.4, Surprise: 1.3 };
+const DIFF_ORDER = { Easy: 0, Medium: 1, Hard: 2, Surprise: 3, Survival: 4 };
 
 const TAU = Math.PI * 2;
 // Segment fields: len, slope (pitch, rad, negative = downhill), turn (total yaw), bank (magnitude), W (flat floor half-width),
@@ -550,6 +578,21 @@ const VORTEX = (dir = 1) => [WIDE(2.2, 10), { len: 52, turn: dir * TAU, slope: -
 const WAVES = (len = 42, amp = 0.2) => ({ len, slope: -0.15, W: 1.6, Rc: 1.4, wall: 1.25, wave: [amp, 9], ease: 7 });
 // enclosed glass tube: nobody can fly out
 const TUBE = (len, extra = {}) => ({ len, slope: -0.16, W: 1, tunnel: true, ...extra });
+// a flight of steps: short drops onto flat landings
+const STAIRS = (n = 4, drop = 0.9) => [WIDE(2.2, 8), ...Array.from({ length: n }, (_, i) => [{ len: 2.6, slope: -drop, gap: true, ease: 1 },
+  { len: 7, slope: -0.1, W: 2.2, Rc: 1.4, wall: 1.5, ease: 2, color: i % 2 ? '#fdf6e8' : undefined }]).flat(), CHUTE(10, -0.2)];
+// a huge banked bowl you can ride high up the wall
+const BOWL = (dir = 1, turn = 1.4) => [WIDE(2.6, 8), { len: 48, turn: dir * Math.PI * turn, slope: -0.1, bank: 0.78, W: 2.6, Rc: 1.7, wall: 1.7 }, CHUTE(10, -0.2)];
+// quick left-right-left bends
+const SNAKE = (n = 4, len = 18) => Array.from({ length: n }, (_, i) => CURVE((i % 2 ? -1 : 1) * 1.15, len, { W: 0.9, bank: 0.48 }));
+// the floor pinches to a single lane, then opens again
+const BOTTLENECK = () => [WIDE(3.2, 8), { len: 16, slope: -0.15, W: 0.42, wall: 1.6, ease: 10 }, WIDE(3, 8)];
+// a glass tube that corkscrews downhill
+const CORKTUBE = (dir = 1, loops = 1.25) => [TUBE(Math.round(64 * loops), { turn: dir * TAU * loops, bank: 0.45, slope: -0.2, W: 0.9 })];
+// sticky mud that bleeds your speed: hold the middle and push
+const MUD = (len = 26) => [WIDE(2, 6), { len, slope: -0.17, W: 2, mud: true, color: '#6b4a2b' }, WIDE(1.4, 6)];
+// a wide plank with no walls: open floor over the drop
+const OPEN = (len = 30, extra = {}) => [{ len: 8, slope: -0.12, W: 2.4, Rc: 0.55, wall: 0.04, ease: 7 }, { len, slope: -0.12, ...extra }, { len: 8, slope: -0.13, W: 1.4, Rc: 1.4, wall: 1.25, ease: 7 }];
 const HELIX = (loops, dir = 1, len = 60) => [CHUTE(10, -0.2), { len: len * loops, turn: dir * TAU * loops, slope: -0.2, bank: 0.5, W: 0.8, helix: true }];
 
 const TRACKS = [
@@ -604,12 +647,106 @@ const TRACKS = [
     blurb: 'A brand new layout every time you pick it.' },
   { id: 'funnel', name: 'Funnel Frenzy', diff: 'Survival', dc: 'd-surv', arena: true, theme: 'neon',
     blurb: 'Last marble rolling wins. Circle the rainbow funnel and bump rivals off, while the rings crumble away from the top.' },
+  // ---- second wave of courses ----
+  { id: 'mudslide', name: 'Mudslide Marsh', diff: 'Easy', dc: 'd-easy', seed: 101, theme: 'jungle',
+    blurb: 'Sticky mud pits, a slalom through the reeds, snaking bends and a gentle staircase.',
+    palette: ['#7cc26a', '#4f9a4a', '#b5dd7a', '#3f7a5a'],
+    segs: [...START(), ...SNAKE(3), ...MUD(24), CURVE(1.5, 28), WIDE(2.6), { len: 34, slope: -0.18, slalom: 4 }, ...STAIRS(3, 0.8),
+      CURVE(-1.8, 30), ...MUD(30), CHUTE(14, -0.22, { boost: true }), ...SNAKE(4, 16), WIDE(3), { len: 28, slope: -0.15, pops: 5 },
+      CURVE(1.4, 26), ...JUMP(6), WAVES(34, 0.14), ...FINISH(-1)] },
+  { id: 'candycascade', name: 'Candy Cascade', diff: 'Easy', dc: 'd-easy', seed: 113, theme: 'candy',
+    blurb: 'Sugar-glass stairs, two giant banked bowls and gumdrop pucks sliding across the lane.',
+    palette: ['#ff7ac0', '#ffb3de', '#9ad8ff', '#c99cff'],
+    segs: [...START(), ...STAIRS(4, 0.85), ...BOWL(1), WIDE(3), { len: 30, slope: -0.14, sliders: 3 }, CURVE(-1.4, 26), WAVES(36, 0.16),
+      ...BOWL(-1, 1.2), WIDE(3), { len: 28, slope: -0.15, pops: 4.8 }, ...STAIRS(3, 0.8), CURVE(1.6, 28, { boost: true }), ...JUMP(6), ...FINISH(1)] },
+  { id: 'lavalane', name: 'Lava Lane', diff: 'Hard', dc: 'd-hard', seed: 127, theme: 'volcano',
+    blurb: 'Open slabs over the lava with no walls, rolling boulders, two freefalls and a narrow crater pass.',
+    palette: ['#3b3236', '#ff6a1a', '#5a4448', '#ffb03a'],
+    segs: [...START(), CURVE(1.4, 26), ...OPEN(30, { sliders: 2 }), ...FREEFALL(), ...BOTTLENECK(), HAIRPIN(-1), ...MUD(22), ...JUMP(9, 0.14),
+      ...OPEN(34, { pegs: 5.5 }), CURVE(-1.6, 26), ...FREEFALL(), WIDE(3), { len: 26, slope: -0.13, sliders: 3 }, ...BOTTLENECK(), ...TIGHTROPE(28, 0.5), ...FINISH(1)] },
+  { id: 'orbit', name: 'Orbit Station', diff: 'Hard', dc: 'd-hard', seed: 139, theme: 'space',
+    blurb: 'Corkscrew tubes through the stars, open docking decks with spinning arms and a final black-hole vortex.',
+    palette: ['#5b6cff', '#6be0ff', '#2c2f6a', '#b48cff'],
+    segs: [...START(), ...CORKTUBE(1), WIDE(3), ...OPEN(28, { spinners: 2 }), ...JUMP(10, 0.16), CURVE(-1.5, 26), ...CORKTUBE(-1, 1),
+      WIDE(3.2), { len: 30, slope: -0.13, spinners: 2 }, ...TIGHTROPE(30, -0.6), CHUTE(14, -0.24, { boost: true }), ...VORTEX(1), ...FINISH(-1)] },
+  { id: 'beachbreakers', name: 'Beach Breakers', diff: 'Easy', dc: 'd-easy', seed: 151, theme: 'beach',
+    blurb: 'Surf down huge rolling waves, carve through palm slalom posts and ride two sandy bowls.',
+    palette: ['#2ec4b6', '#ffd166', '#4cc9f0', '#f8961e'],
+    segs: [...START(), WAVES(52, 0.22), CURVE(-1.5, 28), WIDE(2.6), { len: 34, slope: -0.17, slalom: 4.5 }, ...BOWL(1), CHUTE(14, -0.22, { boost: true }),
+      WAVES(44, 0.2), ...BOWL(-1, 1.1), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...JUMP(7), CURVE(1.4, 26), ...FINISH(1)] },
+  { id: 'templesteps', name: 'Temple Steps', diff: 'Medium', dc: 'd-med', seed: 163, theme: 'jungle',
+    blurb: 'Ancient stone staircases, pillar gates with a single gap and spinning temple paddles.',
+    palette: ['#c9b48a', '#8a7a5a', '#e0d0a8', '#6a8a5a'],
+    segs: [...START(), ...STAIRS(4, 0.95), WIDE(3), { len: 34, slope: -0.15, gates: 7 }, HAIRPIN(1), CHUTE(14, -0.2), HAIRPIN(-1), WIDE(3.2),
+      { len: 30, slope: -0.12, spinners: 2 }, ...STAIRS(5, 0.9), CURVE(1.6, 28), ...JUMP(8, 0.12), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...FINISH(-1)] },
+  { id: 'pipedreams', name: 'Pipe Dreams', diff: 'Medium', dc: 'd-med', seed: 177, theme: 'neon',
+    blurb: 'Almost all tubes: two corkscrews, a long glass slide, a one-lane squeeze and split boost lanes.',
+    palette: ['#00e5ff', '#ff3dbb', '#7b5cff', '#39ff88'],
+    segs: [...START(), TUBE(40, { turn: 1.2, bank: 0.3 }), ...CORKTUBE(-1, 1.5), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true },
+      ...BOTTLENECK(), TUBE(50, { turn: -1.8, bank: 0.35 }), ...JUMP(7), ...CORKTUBE(1), WIDE(3), { len: 26, slope: -0.13, bumpers: 6 }, ...FINISH(1)] },
+  { id: 'avalanche', name: 'Avalanche Alley', diff: 'Hard', dc: 'd-hard', seed: 189, ice: true, theme: 'snow',
+    blurb: 'Glare ice the whole way: icy gates, a cliff freefall, slippery bowls and tumbling snowballs.',
+    palette: ['#bfe9ff', '#ffffff', '#8fd0f5', '#c8c8ff'],
+    segs: [...START(), CURVE(1.6, 34, { W: 1.1 }), WIDE(3), { len: 32, slope: -0.14, gates: 7 }, ...BOWL(-1, 1.3), ...FREEFALL(), WIDE(3),
+      { len: 28, slope: -0.13, sliders: 3 }, HAIRPIN(1), CHUTE(14, -0.22), HAIRPIN(-1), ...TIGHTROPE(26, 0.4), ...BOWL(1), ...JUMP(9, 0.14), ...FINISH(-1)] },
+  { id: 'mesamayhem', name: 'Mesa Mayhem', diff: 'Medium', dc: 'd-med', seed: 201, theme: 'desert',
+    blurb: 'Red-rock switchbacks, sliding boulders, sandstone stairs and a canyon leap.',
+    palette: ['#e07a4a', '#c45a3a', '#f0a868', '#a8473a'],
+    segs: [...START(), ...SNAKE(4), WIDE(3), { len: 30, slope: -0.14, sliders: 3 }, ...STAIRS(4, 0.9), CURVE(-1.7, 30), ...JUMP(9, 0.14),
+      WIDE(3.2), { len: 30, slope: -0.2, pegs: 5.2 }, ...SNAKE(3, 20), ...BOWL(1, 1.2), CHUTE(14, -0.22, { boost: true }), ...FINISH(1)] },
+  { id: 'gumdrop', name: 'Gumdrop Grand', diff: 'Medium', dc: 'd-med', seed: 213, theme: 'candy',
+    blurb: 'Lollipop spinners, pop-up gumdrops, a candy-cane spiral and a toffee pit.',
+    palette: ['#ff6fb5', '#ffd166', '#7bdff2', '#b2f7ef'],
+    segs: [...START(), WIDE(3.2), { len: 30, slope: -0.12, spinners: 2 }, CURVE(1.6, 28), ...HELIX(1.5, -1, 60), WIDE(3), { len: 28, slope: -0.15, pops: 4.6 },
+      ...MUD(22), ...BOWL(1), WIDE(3.2), { len: 28, slope: -0.12, spinners: 2 }, ...JUMP(7), ...SNAKE(3), ...FINISH(-1)] },
+  { id: 'magmaspiral', name: 'Magma Spiral', diff: 'Medium', dc: 'd-med', seed: 227, theme: 'volcano',
+    blurb: 'Twin spirals down the volcano, ash pits, boulder lanes and a jump over the crater.',
+    palette: ['#ff6a1a', '#3b3236', '#ffb03a', '#7a2a1a'],
+    segs: [...START(), ...HELIX(2, 1), ...MUD(22), CURVE(-1.5, 26), WIDE(3), { len: 28, slope: -0.13, sliders: 2 }, ...JUMP(10, 0.16),
+      ...HELIX(1.5, -1, 64), WIDE(3), { len: 30, slope: -0.15, bumpers: 6 }, CURVE(1.4, 26), CHUTE(16, -0.22, { boost: true }), ...FINISH(1)] },
+  { id: 'cometchute', name: 'Comet Chute', diff: 'Medium', dc: 'd-med', seed: 239, theme: 'space',
+    blurb: 'The fastest course: long boost chutes, three big jumps and a corkscrew tube.',
+    palette: ['#6be0ff', '#5b6cff', '#ffffff', '#b48cff'],
+    segs: [...START(), CHUTE(24, -0.26, { boost: true }), ...JUMP(9, 0.14), CURVE(1.4, 30), CHUTE(22, -0.24, { boost: true }), ...CORKTUBE(1),
+      ...JUMP(11, 0.16, 3), CURVE(-1.6, 30), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...JUMP(10, 0.15, 3), CHUTE(18, -0.24, { boost: true }), ...FINISH(-1)] },
+  { id: 'treetop', name: 'Treetop Trail', diff: 'Hard', dc: 'd-hard', seed: 251, theme: 'forest',
+    blurb: 'Rope bridges and open branches high in the canopy, with gates and pegs to thread.',
+    palette: ['#8a6a3a', '#6abf69', '#b08a5a', '#3f9b5a'],
+    segs: [...START(), ...TIGHTROPE(30, 0.5), ...OPEN(30, { gates: 7 }), CURVE(-1.5, 26), ...TIGHTROPE(34, -0.7), ...JUMP(8, 0.12),
+      ...OPEN(32, { pegs: 6 }), HAIRPIN(1), CHUTE(14, -0.2), ...TIGHTROPE(26, 0.3), ...STAIRS(3, 0.8), ...FINISH(1)] },
+  { id: 'frostbite', name: 'Frostbite Falls', diff: 'Medium', dc: 'd-med', seed: 263, theme: 'snow',
+    blurb: 'Frozen waterfalls: ice stairs, a freefall shaft, snowball pucks and a snowy vortex.',
+    palette: ['#9fd8ff', '#e4f6ff', '#6aa8e8', '#bfc8ff'],
+    segs: [...START(), ...STAIRS(4, 0.9), CURVE(1.5, 28), ...FREEFALL(), WIDE(3), { len: 28, slope: -0.13, sliders: 3 }, ...SNAKE(3),
+      ...STAIRS(3, 1), ...VORTEX(-1), WIDE(2.8), { len: 28, slope: -0.14, slalom: 4.5 }, ...FINISH(1)] },
+  { id: 'lagoon', name: 'Lagoon Loops', diff: 'Medium', dc: 'd-med', seed: 277, theme: 'beach',
+    blurb: 'A spiral round the lighthouse, glass tubes under the water and crab pucks on the sand.',
+    palette: ['#4cc9f0', '#2ec4b6', '#ffd166', '#90e0ef'],
+    segs: [...START(), ...HELIX(1.5, 1, 62), TUBE(44, { turn: -1.6, bank: 0.35 }), WIDE(3), { len: 30, slope: -0.13, sliders: 3 }, ...BOWL(1),
+      WAVES(40, 0.2), ...CORKTUBE(-1), WIDE(3), { len: 26, slope: -0.15, pops: 5 }, ...JUMP(8, 0.12), ...FINISH(-1)] },
+  { id: 'thunder', name: 'Thunder Run', diff: 'Hard', dc: 'd-hard', seed: 289, theme: 'sunset',
+    blurb: 'A stormy gauntlet: spinner fields, puck lanes, sweepers and two big leaps.',
+    palette: ['#6a5acd', '#ff7a59', '#c45ab3', '#ffb347'],
+    segs: [...START(), WIDE(3.2), { len: 34, slope: -0.13, spinners: 3 }, CURVE(1.6, 28), WIDE(3), { len: 32, slope: -0.13, sliders: 4 },
+      ...JUMP(10, 0.15), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.8 }, ...BOTTLENECK(), CURVE(-1.7, 30), WIDE(3.2), { len: 32, slope: -0.13, spinners: 3 },
+      ...JUMP(11, 0.16, 3), WIDE(3), { len: 30, slope: -0.13, sliders: 3 }, ...FINISH(1)] },
+  { id: 'pinballpalace', name: 'Pinball Palace', diff: 'Hard', dc: 'd-hard', seed: 301, theme: 'neon',
+    blurb: 'A full pinball table: bumper fields, flipper spinners, sliding drop targets and gated lanes.',
+    palette: ['#ff9f1c', '#ff3dbb', '#00e5ff', '#7b5cff'],
+    segs: [...START(), WIDE(3.4), { len: 32, slope: -0.14, bumpers: 9 }, { len: 26, slope: -0.12, spinners: 2 }, CURVE(-1.5, 26), WIDE(3),
+      { len: 30, slope: -0.14, sliders: 3 }, { len: 30, slope: -0.15, gates: 6.5 }, ...BOWL(1, 1.2), WIDE(3.4), { len: 30, slope: -0.14, bumpers: 9 },
+      { len: 24, slope: -0.12, sweeper: -2.8 }, ...JUMP(7), WIDE(3.2), { len: 28, slope: -0.13, spinners: 2 }, ...FINISH(-1)] },
+  { id: 'rumble', name: 'Rumble Ridge', diff: 'Easy', dc: 'd-easy', seed: 313, theme: 'alpine',
+    blurb: 'A friendly mountain ride: snaking bends, a pole slalom, rolling hills and a big bowl.',
+    palette: ['#62c4f2', '#6abf69', '#ffd166', '#3aa0e8'],
+    segs: [...START(), ...SNAKE(4), WIDE(2.6), { len: 32, slope: -0.17, slalom: 4.5 }, WAVES(40, 0.16), ...BOWL(-1), CHUTE(14, -0.2, { boost: true }),
+      ...SNAKE(3, 20), ...JUMP(6), WIDE(3), { len: 26, slope: -0.15, pops: 5 }, CURVE(1.5, 28), ...FINISH(1)] },
 ];
 
 // builds a fresh downhill course from random building blocks
 const PALETTES = [['#e8a33c', '#d9762b', '#f0c66b', '#c95f2a'], ['#3aa0e8', '#2c6fd1', '#62c4f2', '#4b55c9'], ['#d0604a', '#a8473a', '#e48a5e', '#8c3b4a'],
   ['#6abf69', '#3f9b5a', '#a3d977', '#2f7d6d'], ['#ff5fa2', '#7b5cff', '#ffb02e', '#2ec4b6'], ['#bfe9ff', '#8fd0f5', '#e4f6ff', '#9fb8ff']];
-const RANDOM_THEMES = ['forest', 'alpine', 'desert', 'snow', 'neon', 'sunset'];
+const RANDOM_THEMES = ['forest', 'alpine', 'desert', 'snow', 'neon', 'sunset', 'volcano', 'candy', 'space', 'jungle', 'beach'];
 function randomCourse(seed) {
   const r = rng(seed), pick = a => a[Math.floor(r() * a.length)];
   const segs = START();
@@ -632,6 +769,14 @@ function randomCourse(seed) {
     freefall: () => FREEFALL(),
     tube: () => [TUBE(30 + r() * 16, { turn: turn(turnSign() * (0.8 + r())), bank: 0.3 })],
     vortex: () => VORTEX(r() < 0.5 ? -1 : 1),
+    stairs: () => STAIRS(3 + Math.floor(r() * 2), 0.8 + r() * 0.15),
+    bowl: () => BOWL(Math.sign(turn(turnSign() * Math.PI * 1.2)), 1.2),
+    snake: () => SNAKE(3),
+    spinners: () => [WIDE(3.2), { len: 30, slope: -0.13, spinners: 2 }],
+    sliders: () => [WIDE(3), { len: 28, slope: -0.13, sliders: 3 }],
+    slalom: () => [WIDE(2.6), { len: 30, slope: -0.17, slalom: 4.5 }],
+    gates: () => [WIDE(3), { len: 30, slope: -0.15, gates: 7 }],
+    mud: () => MUD(22),
   };
   const names = Object.keys(blocks), once = { helix: 0, vortex: 0, freefall: 0 };
   while (total < 900) {
@@ -647,7 +792,7 @@ function randomCourse(seed) {
 
 // ---------- track generation ----------
 function buildTrack(def) {
-  const S = [], obs = [], helices = [], ranges = [];
+  const S = [], obs = [], helices = [], ranges = [], lanes = [];   // lanes: where the gap is in a wall of posts, for the computer marbles
   const rand = rng(def.seed);
   let pos = new V3(0, 0, 0), yaw = 0, pitch = 0, bank = 0, W = 2.5, Rc = 1.4, wall = 1.25;
   let finishIdx = -1;
@@ -678,7 +823,7 @@ function buildTrack(def) {
       const N = new V3().crossVectors(B, T).normalize();
       const inner = k > 5 / DS && k < n - 5 / DS;
       S.push({ p: pos, T, B, N, W, Rc, wall, gap: !!seg.gap, seg: si, color, helix: !!seg.helix, tunnel: !!seg.tunnel,
-        div: !!seg.divider && inner, boost: !!seg.boost && inner && ((k * DS) % 9) < 3 });
+        div: !!seg.divider && inner, boost: !!seg.boost && inner && ((k * DS) % 9) < 3, mud: !!seg.mud && inner });
     }
     const end = S.length;
     ranges.push([start, end]);
@@ -710,7 +855,40 @@ function buildTrack(def) {
     }
     if (seg.sweeper) {
       const k = Math.floor((start + end) / 2);
-      obs.push({ type: 'sweep', idx: k, x: 0, len: S[k].W + 0.25, omega: seg.sweeper * 0.75, phase: rand() * TAU });
+      obs.push({ type: 'sweep', idx: k, x: 0, len: S[k].W + 0.25, omega: seg.sweeper * 0.75, phase: rand() * TAU, arms: 1 });
+    }
+    if (seg.spinners) {
+      // crossed paddles turning in the middle of a wide floor; several of them alternate direction
+      for (let i = 0; i < seg.spinners; i++) {
+        const k = start + Math.round((i + 0.5) / seg.spinners * (end - start));
+        obs.push({ type: 'sweep', idx: k, x: 0, len: Math.min(S[k].W + 0.1, 2.3), omega: (i % 2 ? -1 : 1) * (1.5 + rand() * 0.5), phase: rand() * TAU, arms: 2 });
+      }
+    }
+    if (seg.sliders) {
+      // heavy pucks gliding from wall to wall across the floor
+      const span = end - start - Math.round(8 / DS);
+      for (let i = 0; i < seg.sliders; i++) {
+        const k = start + Math.round(4 / DS) + Math.floor((i + 0.5) / seg.sliders * span);
+        obs.push({ type: 'slide', idx: k, x: 0, r: 0.7, h: 0.8, amp: Math.max(0.2, S[k].W - 0.55), rate: 1.1 + rand() * 0.7, phase: rand() * TAU });
+      }
+    }
+    if (seg.slalom) {
+      // single posts on alternate sides: weave left and right through them
+      let side = rand() < 0.5 ? -1 : 1;
+      for (let k = start + Math.round(5 / DS); k < end - Math.round(4 / DS); k += Math.round(seg.slalom / DS)) {
+        const w = S[k].W;
+        for (let x = side * 0.15; Math.abs(x) <= w + 0.01; x += side * 0.62) obs.push({ type: 'peg', idx: k, x, r: 0.26, h: 1.3 });
+        lanes.push({ idx: k, x: -side * w * 0.5 });
+        side = -side;
+      }
+    }
+    if (seg.gates) {
+      // walls of posts with one gap each, the gap jumping from side to side
+      for (let k = start + Math.round(5 / DS); k < end - Math.round(4 / DS); k += Math.round(seg.gates / DS)) {
+        const w = S[k].W - 0.25, gap = (rand() * 2 - 1) * (w - 0.9);
+        for (let x = -w; x <= w + 0.01; x += 0.62) if (Math.abs(x - gap) > 0.85) obs.push({ type: 'peg', idx: k, x, r: 0.24, h: 1.2 });
+        lanes.push({ idx: k, x: gap });
+      }
     }
   });
   for (const o of obs) {
@@ -720,7 +898,7 @@ function buildTrack(def) {
   }
   const byIdx = new Map();
   for (const o of obs) { const b = o.idx >> 4; if (!byIdx.has(b)) byIdx.set(b, []); byIdx.get(b).push(o); }
-  return { S, obs, byIdx, helices, ranges, finishIdx, def };
+  return { S, obs, byIdx, helices, ranges, lanes, finishIdx, def };
 }
 
 // cross-section of the channel in local (x across, y up) coords; fixed point count so strips line up
@@ -905,6 +1083,11 @@ const THEMES = {
   snow: { sky: ['#6a9fd8', '#d5e6f5', '#f4f8fc'], fog: '#dfe9f3', ground: '#f2f6fb', hemi: ['#eef6ff', '#c8d6e6', 0.85], sun: ['#ffffff', 0.85], trees: 'snowpine', leaf: '#2d5a48', clouds: '#f4f7fb', hills: 'peaks', hill: '#8a96a8', snow: true },
   neon: { sky: ['#05030f', '#1a0b3a', '#2a0f4a'], fog: '#1a0b3a', ground: '#0d0820', hemi: ['#8a6bff', '#220a33', 0.6], sun: ['#d0c0ff', 0.65], trees: 'none', clouds: null, hills: 'grid', hill: '#ff3dbb', stars: true, glow: true },
   sunset: { sky: ['#2b1d5c', '#ff8a5c', '#ffd29a'], fog: '#f59a72', ground: '#6d7d48', hemi: ['#ffd2b0', '#5a4060', 0.7], sun: ['#ffb37a', 1.1], trees: 'round', leaf: '#5b7a3a', clouds: '#ffc0a8', hills: 'hills', hill: '#6a4a6a' },
+  volcano: { sky: ['#1a0606', '#7a2414', '#ff8a3a'], fog: '#6a2416', ground: '#2b2224', hemi: ['#ffb090', '#3a1a10', 0.7], sun: ['#ffa060', 1.1], trees: 'rock', leaf: '#3b3236', clouds: '#5a3a3a', hills: 'peaks', hill: '#3a2a2a' },
+  candy: { sky: ['#ff8fd0', '#ffd1ec', '#fff4fb'], fog: '#ffd8ef', ground: '#b8f0d8', hemi: ['#fff0fa', '#c080c0', 0.85], sun: ['#fff0f8', 1.0], trees: 'lolly', leaf: '#ff6fb5', clouds: '#ffffff', hills: 'hills', hill: '#c99cff' },
+  space: { sky: ['#000005', '#0a0a2a', '#1a1040'], fog: '#0a0a24', ground: '#16162a', hemi: ['#a0b0ff', '#101020', 0.65], sun: ['#e0e8ff', 0.9], trees: 'crystal', leaf: '#6be0ff', clouds: null, hills: 'peaks', hill: '#3a3a5a', stars: true, glow: true },
+  jungle: { sky: ['#2f8a6a', '#a8e0b0', '#e8f8e0'], fog: '#a8d8a8', ground: '#4f8a3a', hemi: ['#e0ffd8', '#2a5a2a', 0.8], sun: ['#fff8d0', 1.0], trees: 'round', leaf: '#1f6a2a', clouds: '#ffffff', hills: 'hills', hill: '#3a7a3a' },
+  beach: { sky: ['#1f96ff', '#9ae0ff', '#fff4d8'], fog: '#bfe8ff', ground: '#f2dca0', hemi: ['#ffffff', '#c0a060', 0.85], sun: ['#fff4e0', 1.15], trees: 'palm', leaf: '#2f9a4a', clouds: '#ffffff', hills: 'mesas', hill: '#e8c88a' },
 };
 let weather = null;   // falling snow, follows the camera
 function applyTheme(th, box, groundY) {
@@ -954,7 +1137,7 @@ function applyTheme(th, box, groundY) {
 }
 let world = null;     // current track + meshes
 let trackGroup = null;
-let sweepMeshes = [], bumperMeshes = [], popMeshes = [], gateMesh = null;
+let sweepMeshes = [], bumperMeshes = [], popMeshes = [], slideMeshes = [], gateMesh = null;
 
 function buildScene(track) {
   if (trackGroup) {
@@ -962,7 +1145,7 @@ function buildScene(track) {
     trackGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); });
   }
   trackGroup = new THREE.Group();
-  sweepMeshes = []; bumperMeshes = []; popMeshes = [];
+  sweepMeshes = []; bumperMeshes = []; popMeshes = []; slideMeshes = [];
   const { S } = track;
   const th = THEMES[track.def.theme] || THEMES.forest;
   const trackMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.0, clearcoat: 0.6, clearcoatRoughness: 0.25, side: THREE.DoubleSide });
@@ -1154,13 +1337,21 @@ function buildScene(track) {
     } else if (o.type === 'bumper') {
       mesh = new THREE.Mesh(new THREE.CylinderGeometry(o.r, o.r * 1.1, o.h, 24), bumpMat());
       mesh.userData.off = o.h / 2; bumperMeshes.push({ mesh, o });
+    } else if (o.type === 'slide') {
+      mesh = new THREE.Group();
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(o.r, o.r, o.h, 28), new THREE.MeshStandardMaterial({ color: '#ff8a1f', roughness: 0.35 }));
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(o.r + 0.02, o.r + 0.02, 0.18, 28), new THREE.MeshStandardMaterial({ color: '#1b1f3a', roughness: 0.5 }));
+      drum.castShadow = true; mesh.add(drum, band);
+      mesh.userData.off = o.h / 2; slideMeshes.push({ mesh, o });
     } else {
       mesh = new THREE.Group();
       const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.2, 16), pegMat);
       hub.position.y = 0.6;
       const bar = new THREE.Mesh(new THREE.BoxGeometry(o.len * 2, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: '#ffd23f', roughness: 0.35 }));
       bar.position.y = 0.55; bar.castShadow = true;
-      mesh.add(hub, bar); mesh.userData.off = 0; sweepMeshes.push({ mesh, o });
+      mesh.add(hub, bar);
+      if (o.arms === 2) { const bar2 = bar.clone(); bar2.userData.a0 = Math.PI / 2; mesh.add(bar2); bar.material = bar.material.clone(); bar.material.color.set('#3fd2ff'); bar2.material = bar.material; }
+      mesh.userData.off = 0; sweepMeshes.push({ mesh, o });
     }
     mesh.castShadow = true;
     orient(mesh, o.B, o.N, o.T);
@@ -1208,11 +1399,15 @@ function buildScene(track) {
     snowpine: [[new THREE.CylinderGeometry(0.25, 0.3, 1.4, 6), '#6a4a33', 0.7, 0], [new THREE.ConeGeometry(1.6, 4.5, 8), th.leaf, 3.65, 0], [new THREE.ConeGeometry(0.9, 1.9, 8), '#ffffff', 5.3, 0]],
     cactus: [[new THREE.CylinderGeometry(0.42, 0.48, 4, 8), th.leaf, 2, 0], [new THREE.CylinderGeometry(0.3, 0.3, 1.8, 8), th.leaf, 2.6, 0.75], [new THREE.CylinderGeometry(0.28, 0.28, 1.4, 8), th.leaf, 2.0, -0.7]],
     round: [[new THREE.CylinderGeometry(0.25, 0.32, 2.2, 6), '#6a4a33', 1.1, 0], [new THREE.IcosahedronGeometry(1.8, 1), th.leaf, 3.4, 0]],
+    palm: [[new THREE.CylinderGeometry(0.2, 0.3, 5, 6), '#9a6a3a', 2.5, 0], [new THREE.ConeGeometry(2.4, 0.9, 7), th.leaf, 5.2, 0]],
+    rock: [[new THREE.DodecahedronGeometry(1.4, 0), th.leaf, 0.7, 0], [new THREE.DodecahedronGeometry(0.8, 0), th.leaf, 0.4, 1.4]],
+    lolly: [[new THREE.CylinderGeometry(0.12, 0.12, 3, 6), '#ffffff', 1.5, 0], [new THREE.SphereGeometry(1.2, 14, 10), th.leaf, 3.6, 0]],
+    crystal: [[new THREE.OctahedronGeometry(1.3, 0), th.leaf, 1.6, 0], [new THREE.OctahedronGeometry(0.7, 0), th.leaf, 0.8, 1.2]],
     none: [],
   };
   const parts = STYLES[th.trees] || STYLES.pine;
   for (const [geo, col, yo, xo] of parts) {
-    const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, flatShading: th.trees === 'round' }), trees.length);
+    const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, flatShading: th.trees === 'round' || th.trees === 'rock' || th.trees === 'crystal', emissive: th.trees === 'crystal' ? th.leaf : '#000000', emissiveIntensity: th.trees === 'crystal' ? 0.5 : 0 }), trees.length);
     trees.forEach(([x, z, sc], k) => { dm.position.set(x + xo * sc, groundY + yo * sc, z); dm.scale.setScalar(sc); dm.updateMatrix(); inst.setMatrixAt(k, dm.matrix); });
     inst.castShadow = true; trackGroup.add(inst);
   }
@@ -1325,6 +1520,7 @@ function collideTrack(m, s) {
     const vb = m.v.dot(s.B); if (vb * sx < 0) m.v.addScaledVector(s.B, -1.3 * vb);
   }
   if (s.boost && pen > 0 && Math.abs(Math.abs(x) - (s.div ? 1.3 : 0)) < 1.2) m.v.addScaledVector(s.T, 34 * SUB);
+  if (s.mud && pen > -0.05 && !(m.rocketT > 0)) m.v.multiplyScalar(1 - 1.6 * SUB);
   if (pen <= 0) return false;
   _n.copy(s.B).multiplyScalar(nx).addScaledVector(s.N, ny);
   m.p.addScaledVector(_n, pen);
@@ -1350,16 +1546,28 @@ function collideObstacles(m) {
           hit(m, 'peg', -vn);
         }
         if (ly > 0.75 + R) continue;   // hopped over the bar
-        const a = o.phase + o.omega * simTime, ca = Math.cos(a), sa = Math.sin(a);
-        const t = clamp(lx * ca + lz * sa, -o.len, o.len);
-        const dx = lx - t * ca, dz = lz - t * sa, d = Math.hypot(dx, dz), min = 0.2 + R;
+        for (let arm = 0; arm < (o.arms || 1); arm++) {
+          const a = o.phase + o.omega * simTime + arm * Math.PI / 2, ca = Math.cos(a), sa = Math.sin(a);
+          const t = clamp(lx * ca + lz * sa, -o.len, o.len);
+          const dx = lx - t * ca, dz = lz - t * sa, d = Math.hypot(dx, dz), min = 0.2 + R;
+          if (d < min && d > 1e-5) {
+            _n.copy(o.B).multiplyScalar(dx / d).addScaledVector(o.T, dz / d);
+            m.p.addScaledVector(_n, min - d);
+            _t.copy(o.B).multiplyScalar(-sa * o.omega * t).addScaledVector(o.T, ca * o.omega * t);
+            const vr = m.v.dot(_n) - _t.dot(_n);
+            if (vr < 0) { m.v.addScaledVector(_n, -1.3 * vr); hit(m, 'sweep', -vr); }
+            if (m.v.dot(o.T) < 2) m.v.addScaledVector(o.T, 1.5);
+          }
+        }
+      } else if (o.type === 'slide') {
+        const sx = slideX(o), dx = lx - sx, d = Math.hypot(dx, lz), min = o.r + R;
+        if (ly > o.h + R) continue;
         if (d < min && d > 1e-5) {
-          _n.copy(o.B).multiplyScalar(dx / d).addScaledVector(o.T, dz / d);
+          _n.copy(o.B).multiplyScalar(dx / d).addScaledVector(o.T, lz / d);
           m.p.addScaledVector(_n, min - d);
-          _t.copy(o.B).multiplyScalar(-sa * o.omega * t).addScaledVector(o.T, ca * o.omega * t);
-          const vr = m.v.dot(_n) - _t.dot(_n);
-          if (vr < 0) { m.v.addScaledVector(_n, -1.3 * vr); hit(m, 'sweep', -vr); }
-          if (m.v.dot(o.T) < 2) m.v.addScaledVector(o.T, 1.5);
+          const ov = o.amp * o.rate * Math.cos(simTime * o.rate + o.phase) * (dx / d);   // the puck's own speed along the normal
+          const vr = m.v.dot(_n) - ov;
+          if (vr < 0) { m.v.addScaledVector(_n, -1.4 * vr); hit(m, 'bumper', Math.min(8, -vr)); }
         }
       } else {
         if (o.type === 'pop' && ly > popHeight(o) + 0.1) continue;
@@ -1378,6 +1586,7 @@ function collideObstacles(m) {
     }
   }
 }
+function slideX(o) { return o.amp * Math.sin(simTime * o.rate + o.phase); }
 function popHeight(o) { return o.h * clamp(Math.sin(simTime * o.rate + o.phase) * 1.6 + 0.2, 0, 1) - 0.05; }
 function respawn(m) {
   const S = track.S;
@@ -1399,7 +1608,13 @@ function controlAI(m, dt) {
   const x = _rel.dot(s.B);
   m.target = clamp(m.target, -s.W * 0.8, s.W * 0.8);
   if (s.div && Math.abs(m.target) < 1.1) m.target = (m.target < 0 ? -1 : 1) * 1.4;
-  m.steer = clamp((m.target - x) * 0.6, -0.75, 0.75);
+  let gain = 0.6;
+  for (const ln of track.lanes || []) {   // head for the gap in the next wall of posts
+    if (ln.idx < m.idx - 2) continue;
+    if (ln.idx > m.idx + 10 / DS) break;
+    m.target = ln.x; gain = 1.1; break;
+  }
+  m.steer = clamp((m.target - x) * gain, -0.9, 0.9);
   m.push = m.skill;
   if (m.item && simTime > m.useAt && state === 'race') useItem(m);
 }
@@ -1654,7 +1869,7 @@ function buildArenaScene(tr) {
     trackGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); });
   }
   trackGroup = new THREE.Group();
-  sweepMeshes = []; bumperMeshes = []; popMeshes = []; gateMesh = null;
+  sweepMeshes = []; bumperMeshes = []; popMeshes = []; slideMeshes = []; gateMesh = null;
   const th = THEMES[tr.def.theme] || THEMES.neon, rim = ARENA.rim;
   // the funnel: one lathe per ring, each its own colour round the rainbow, with a checker of light and dark tiles
   tr.rings = [];
@@ -1810,6 +2025,32 @@ function nextUnlock() {
   return econ.coins >= next.price ? `You can afford ${next.name} in the shop now.` : `${(next.price - econ.coins).toLocaleString()} more coins unlocks ${next.name}.`;
 }
 
+// ---------- best-time boards (top 5 per course, kept on this device) ----------
+function topTimes(id) {
+  let list = store.get('top-' + id);
+  if (!Array.isArray(list)) { const b = store.get('best-' + id); list = b ? [{ t: b, m: null, d: 0 }] : []; }
+  return list;
+}
+function recordTime(id, t, marble) {
+  const list = topTimes(id).concat({ t, m: marble, d: Date.now(), now: 1 }).sort((a, b) => a.t - b.t).slice(0, 5);
+  const rank = list.findIndex(e => e.now) + 1;
+  store.set('top-' + id, list.map(({ now, ...e }) => e));
+  return rank;
+}
+const MEDAL = ['', '🥇', '🥈', '🥉'];
+function boardHtml(def, hiRank) {
+  const list = topTimes(def.id);
+  const rows = list.length ? list.map((e, k) => {
+    const md = e.m ? findMarble(e.m) : null;
+    const when = e.d ? new Date(e.d).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '';
+    return `<li class="${k + 1 === hiRank ? 'me' : ''}"><span>${MEDAL[k + 1] || (k + 1)}</span><i style="background:${md ? dotBg(md) : 'rgba(255,255,255,0.2)'}"></i><span>${md ? md.name : 'You'} <span class="sub">${when}</span></span><span>${fmt(e.t)}</span></li>`;
+  }).join('') : '<li class="empty"><span class="sub">No times yet. Finish a race to set one.</span></li>';
+  return `<h3>Top times · ${def.name}</h3><ol>${rows}</ol>`;
+}
+function cupTrophyHtml(c) {
+  const tr = store.get('trophy-' + c.id);
+  return `<div class="tr${tr ? ' t' + tr : ''}" title="${c.trophy.name}"><span class="cup">${c.trophy.icon}</span><b>${c.trophy.name}</b>${tr ? ['Gold', 'Silver', 'Bronze'][tr - 1] : 'Not won yet'}</div>`;
+}
 function trackLength(def) { return def.arena ? '' : def.random ? '~950 m' : Math.round(def.segs.reduce((a, s) => a + s.len, 0)) + ' m'; }
 function renderMenu() {
   if (trial && trial.used && state === 'menu') { endTrial(); finishOrder = []; createMarbles(); }
@@ -1817,6 +2058,11 @@ function renderMenu() {
   for (const [id, md] of MODE_TABS) $(id).setAttribute('aria-pressed', mode === md);
   const online = mode === 'online', surv = mode === 'survival';
   $('trackList').hidden = !(mode === 'single' || surv || (online && net)); $('cupList').hidden = mode !== 'gp'; $('onlinePanel').hidden = !online;
+  $('cabinet').hidden = mode !== 'gp';
+  if (mode === 'gp') $('cabinet').innerHTML = CUPS.map(cupTrophyHtml).join('');
+  const bdef = TRACKS[selTrack];
+  $('trackBoard').hidden = !(mode === 'single' && bdef && !bdef.random && !bdef.arena);
+  if (!$('trackBoard').hidden) $('trackBoard').innerHTML = boardHtml(bdef, 0);
   $('listLabel').textContent = mode === 'gp' ? 'Pick a cup' : surv ? 'The arena' : online ? (net ? (net.role === 'host' ? 'Pick a course' : 'The host picks the course') : 'Play with friends') : 'Pick a course';
   $('modeHelp').textContent = mode === 'gp' ? 'Four races in a row. Every finish scores points, and the top three win a trophy.'
     : surv ? 'Keep circling to stay on the cone. The outer ring crumbles away every few seconds. Too fast and you fly off the top, too slow and you slide into the hole.'
@@ -1827,15 +2073,17 @@ function renderMenu() {
   if (online) renderOnline();
   $('cupList').innerHTML = CUPS.map((c, i) => {
     const tr = store.get('trophy-' + c.id);
-    return `<button class="track" data-cup="${i}" aria-pressed="${i === selCup}"><span class="nm">${c.name}</span>
-      <span class="meta"><span class="diff ${c.dc}">${c.diff}</span>${tr ? `<span class="trophy t${tr}">${['Gold', 'Silver', 'Bronze'][tr - 1]} trophy</span>` : 'No trophy yet'}</span>
+    return `<button class="track" data-cup="${i}" aria-pressed="${i === selCup}"><span class="nm"><span class="trk-ico">${c.trophy.icon}</span>${c.name}</span>
+      <span class="meta"><span class="diff ${c.dc}">${c.diff}</span>${tr ? `<span class="trophy t${tr}">${['Gold', 'Silver', 'Bronze'][tr - 1]} ${c.trophy.name}</span>` : 'Win the ' + c.trophy.name}</span>
       <span class="blurb">${c.blurb}</span></button>`;
   }).join('');
   syncAudioButtons();
-  $('trackList').innerHTML = TRACKS.map((t, i) => {
+  const order = TRACKS.map((t, i) => i).sort((a, b) => (TRACKS[a].random ? 1 : 0) - (TRACKS[b].random ? 1 : 0) || (DIFF_ORDER[TRACKS[a].diff] - DIFF_ORDER[TRACKS[b].diff]) || a - b);
+  $('trackList').innerHTML = order.map(i => {
+    const t = TRACKS[i];
     if (mode === 'single' ? t.arena : surv && !t.arena) return '';
-    const best = store.get('best-' + t.id);
-    return `<button class="track${t.random || surv ? ' wide' : ''}" data-i="${i}" aria-pressed="${i === selTrack}"><span class="nm">${t.name}</span>
+    const best = store.get('best-' + t.id), pl = store.get('place-' + t.id);
+    return `<button class="track${t.random || surv ? ' wide' : ''}" data-i="${i}" aria-pressed="${i === selTrack}"><span class="nm">${pl && pl <= 3 ? `<span class="medal">${MEDAL[pl]}</span> ` : ''}${t.name}</span>
       <span class="meta"><span class="diff ${t.dc}">${t.diff}</span>${trackLength(t)}${best ? `${t.arena ? '' : ' · '}<span class="best">${t.arena ? 'longest' : 'best'} ${fmt(best)}</span>` : ''}</span>
       <span class="blurb">${t.blurb}</span></button>`;
   }).join('');
@@ -1926,6 +2174,8 @@ function onPlayerFinish() {
   const key = 'best-' + track.def.id, best = store.get(key);
   me.newBest = !track.def.randomFrom && (!best || me.finishTime < best);
   if (me.newBest) store.set(key, me.finishTime);
+  me.boardRank = track.def.randomFrom ? 0 : recordTime(track.def.id, me.finishTime, me.def.id);
+  if (!track.def.randomFrom) { const pk = 'place-' + track.def.id, pp = store.get(pk); if (!pp || place < pp) store.set(pk, place); }
   const mul = (DIFF_MUL[gp ? gp.cup.diff : track.src.diff] || 1) * me.stats.coinMul;
   const lines = [[`${ordinal(place)} place`, PLACE_PAY[place - 1]], ['Coins picked up', raceCoins]];
   if (!me.respawns) lines.push(['Clean run, no falls', 20]);
@@ -1961,6 +2211,8 @@ function renderResults() {
   }
   $('rSub').innerHTML = `${gp ? gp.cup.name + ' · race ' + (gp.race + 1) + ' of 4 · ' : ''}${track.def.name} · ${track.arena ? 'you survived' : 'your time'} ${fmt(me.finishTime)}${me.newBest ? ` · <span class="best">${track.arena ? 'longest yet' : 'new best'}</span>` : ''}`;
   const rest = marbles.filter(m => !m.finished).sort((a, b) => b.idx - a.idx);
+  $('rBoard').hidden = !!(track.arena || track.def.randomFrom);
+  if (!$('rBoard').hidden) { const bh = boardHtml(track.def, me.boardRank); if (bh !== renderResults.board) { $('rBoard').innerHTML = bh; renderResults.board = bh; } }
   const pay = me.payout;
   const earnHtml = `${pay.lines.map(([l, v]) => `<div><span>${l}</span><span>+${v}</span></div>`).join('')}
     ${pay.mul !== 1 ? `<div><span>${track.src.diff} course${me.stats.coinMul > 1 ? ' + ' + findMarble(selMarble).name + ' bonus' : ''}</span><span>×${pay.mul.toFixed(2)}</span></div>` : ''}
@@ -1993,7 +2245,7 @@ function showPodium() {
   if (myPlace <= 3 && (!prev || myPlace < prev)) store.set(tkey, myPlace);
   state = 'menu'; $('results').hidden = true; $('hud').hidden = true; $('podium').hidden = false;
   $('pTitle').textContent = myPlace === 1 ? `${gp.cup.name} champion!` : myPlace <= 3 ? `${ordinal(myPlace)} in the ${gp.cup.name}` : `${ordinal(myPlace)} overall`;
-  $('pSub').textContent = myPlace <= 3 ? `You take home the ${['gold', 'silver', 'bronze'][myPlace - 1]} trophy.` : 'Finish in the top three to win a trophy.';
+  $('pSub').textContent = myPlace <= 3 ? `${gp.cup.trophy.icon} You take home the ${['gold', 'silver', 'bronze'][myPlace - 1]} ${gp.cup.trophy.name}.` : `Finish in the top three to win the ${gp.cup.trophy.name}.`;
   $('pPodium').innerHTML = [1, 0, 2].map(k => { const r = table[k]; return `<div class="step s${k + 1}${r.m.player ? ' me' : ''}"><span class="dot big" style="background:${dotBg(r.m.def)}"></span><b>${r.m.def.name}</b><span>${r.pts} pts</span><div class="block">${k + 1}</div></div>`; }).join('');
   $('pList').innerHTML = table.slice(3).map((r, k) => `<li class="${r.m.player ? 'me' : ''}"><span class="pl">${k + 4}</span><i style="background:${dotBg(r.m.def)}"></i><span>${r.m.def.name}${r.m.player ? ' (you)' : ''}</span><span>${r.pts} pts</span></li>`).join('');
   $('pEarn').innerHTML = prize ? `<div class="tot"><span>Cup prize</span><span><i class="coin"></i>${prize}</span></div><div class="sub">Wallet: ${econ.coins.toLocaleString()} coins. ${nextUnlock()}</div>` : `<div class="sub">Wallet: ${econ.coins.toLocaleString()} coins. ${nextUnlock()}</div>`;
@@ -2154,8 +2406,8 @@ const netErr = e => e && e.type === 'peer-unavailable' ? 'No room with that code
   : e && (e.type === 'network' || e.type === 'server-error' || e.type === 'timeout' || e.type === 'socket-error') ? "Couldn't reach the online service. Check your connection and try again."
   : !window.Peer ? "Couldn't load online play. Check your connection and try again." : 'Something went wrong connecting. Try again.';
 function readName() { netName = ($('onName').value || '').trim().slice(0, 14) || netName; store.set('name', netName); }
-async function hostRoom() {
-  readName(); netMsg('Creating a room…');
+async function hostRoom(duel) {
+  readName(); netMsg(duel ? 'Creating a 1v1 room…' : 'Creating a room…');
   try {
     await loadPeerLib();
     let peer = null, code = '';
@@ -2164,7 +2416,7 @@ async function hostRoom() {
       try { peer = await openPeer(NET_PREFIX + code); } catch (e) { if (e.type !== 'unavailable-id') throw e; }
     }
     if (!peer) throw { type: 'server-error' };
-    net = { role: 'host', peer, code, conns: new Map(), players: [{ peer: peer.id, name: netName, marble: selMarble }], events: [], lastSend: 0, racing: false };
+    net = { role: 'host', peer, code, duel: !!duel, conns: new Map(), players: [{ peer: peer.id, name: netName, marble: selMarble }], events: [], lastSend: 0, racing: false };
     peer.on('connection', c => {
       c.on('data', d => hostRecv(c, d));
       c.on('close', () => hostDrop(c.peer));
@@ -2177,7 +2429,7 @@ async function hostRoom() {
 function hostRecv(c, d) {
   if (!net || net.role !== 'host' || !d) return;
   if (d.t === 'hello') {
-    if (net.players.length >= MAX_PLAYERS || net.racing) { c.send({ t: 'full', why: net.racing ? 'That room is mid-race. Try again when it finishes.' : 'That room is full.' }); setTimeout(() => c.close(), 300); return; }
+    if (net.players.length >= (net.duel ? 2 : MAX_PLAYERS) || net.racing) { c.send({ t: 'full', why: net.racing ? 'That room is mid-race. Try again when it finishes.' : net.duel ? 'That 1v1 room already has two players.' : 'That room is full.' }); setTimeout(() => c.close(), 300); return; }
     net.conns.set(c.peer, c);
     net.players = net.players.filter(p => p.peer !== c.peer).concat({ peer: c.peer, name: String(d.name || 'Friend').slice(0, 14), marble: findMarble(d.marble).id });
     sfx.ui(); renderMenu(); broadcastLobby();
@@ -2201,16 +2453,18 @@ function hostDrop(peerId) {
 }
 function broadcastLobby() {
   if (!net || net.role !== 'host') return;
-  const msg = { t: 'lobby', code: net.code, players: net.players, track: selTrack };
+  const msg = { t: 'lobby', code: net.code, players: net.players, track: selTrack, duel: net.duel };
   for (const c of net.conns.values()) if (c.open) c.send(msg);
 }
 function hostStart() {
   if (!net || net.role !== 'host') return;
+  if (net.duel && net.players.length < 2) { netMsg('Waiting for your rival to join the 1v1 room.'); return; }
   const humans = net.players.map(p => ({ peer: p.peer, name: p.name, marble: p.marble }));
   const used = new Set(humans.map(h => h.marble));
-  const bots = MARBLES.filter(d => !used.has(d.id)).slice(0, MAX_PLAYERS - humans.length).map(d => ({ peer: null, name: d.name, marble: d.id }));
+  const bots = net.duel ? [] : MARBLES.filter(d => !used.has(d.id)).slice(0, MAX_PLAYERS - humans.length).map(d => ({ peer: null, name: d.name, marble: d.id }));
   const slots = [];
-  for (const row of [Math.round(2 / DS), Math.round(3.6 / DS)]) for (const x of [-1.95, -0.65, 0.65, 1.95]) slots.push([row, x + (row % 2 ? 0.3 : 0)]);
+  if (net.duel) slots.push([Math.round(2.6 / DS), -0.8], [Math.round(2.6 / DS), 0.8]);   // side by side on the front row
+  else for (const row of [Math.round(2 / DS), Math.round(3.6 / DS)]) for (const x of [-1.95, -0.65, 0.65, 1.95]) slots.push([row, x + (row % 2 ? 0.3 : 0)]);
   for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
   const setup = { t: 'start', track: selTrack, seed: (Math.random() * 1e9) | 0, roster: humans.concat(bots), slots };
   for (const c of net.conns.values()) if (c.open) c.send(setup);
@@ -2256,7 +2510,7 @@ async function joinRoom() {
 function clientRecv(d) {
   if (!net || net.role !== 'client' || !d) return;
   if (d.t === 'lobby') {
-    net.players = d.players;
+    net.players = d.players; net.duel = !!d.duel;
     if (d.track !== selTrack) { selTrack = d.track; if (state === 'menu') loadTrack(selTrack); }
     if (state === 'menu') renderMenu();
   } else if (d.t === 'start') { startNetRace(d); }
@@ -2284,13 +2538,16 @@ function renderOnline() {
   if (document.activeElement !== $('onName')) $('onName').value = netName;
   if (!net) return;
   $('onRoom').textContent = net.code;
+  $('onRoomKind').textContent = net.duel ? '1v1 room code' : 'Room code';
   const myId = net.peer.id;
   $('onPlayers').innerHTML = net.players.map((p, k) => `<li class="${p.peer === myId ? 'me' : ''}"><i style="background:${dotBg(findMarble(p.marble))}"></i>${p.name}${k === 0 ? ' <span class="sub">· host</span>' : ''}${p.peer === myId ? ' <span class="sub">· you</span>' : ''}</li>`).join('');
   $('onHint').textContent = net.role === 'host'
-    ? (net.players.length < 2 ? 'Send this code to your friends. They open Online, type it in and tap Join.' : `${net.players.length} players in. Pick a course and start when everyone is ready.`)
+    ? (net.duel ? (net.players.length < 2 ? 'Send this code to one friend. They open Online, type it in and tap Join.' : 'Your rival is in. Pick a course and start the 1v1.')
+      : net.players.length < 2 ? 'Send this code to your friends. They open Online, type it in and tap Join.' : `${net.players.length} players in. Pick a course and start when everyone is ready.`)
     : 'Waiting for the host to start the race…';
 }
-$('onCreate').addEventListener('click', () => { sfx.init(); sfx.ui(); hostRoom(); });
+$('onCreate').addEventListener('click', () => { sfx.init(); sfx.ui(); hostRoom(false); });
+$('onDuel').addEventListener('click', () => { sfx.init(); sfx.ui(); hostRoom(true); });
 $('onJoin').addEventListener('click', () => { sfx.init(); sfx.ui(); joinRoom(); });
 $('onCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); e.stopPropagation(); });
 $('onName').addEventListener('keydown', e => e.stopPropagation());
@@ -3216,7 +3473,8 @@ function update(dt) {
       m.mesh.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, dist / R));
     }
   }
-  for (const { mesh, o } of sweepMeshes) mesh.children.forEach(c => { if (c.geometry.type === 'BoxGeometry') c.rotation.y = o.phase + o.omega * simTime; });
+  for (const { mesh, o } of sweepMeshes) mesh.children.forEach(c => { if (c.geometry.type === 'BoxGeometry') c.rotation.y = o.phase + o.omega * simTime + (c.userData.a0 || 0); });
+  for (const { mesh, o } of slideMeshes) mesh.position.copy(o.pos).addScaledVector(o.B, slideX(o)).addScaledVector(o.N, o.h / 2);
   const spinA = performance.now() / 300;
   for (const c of track.coins) if (!c.taken) c.spin.rotation.y = spinA;
   if (state === 'race' && !me.out) {
