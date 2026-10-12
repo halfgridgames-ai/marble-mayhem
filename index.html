@@ -285,8 +285,13 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
   #hud .minibox { left: auto; right: 12px; transform: none; }
   #hud .standings { top: calc(var(--top) + 106px); }
 }
+/* portrait-only game: on a phone held sideways, ask to turn it upright */
+#rotate { display: none; position: fixed; inset: 0; z-index: 1000; background: #141c3a; color: #fff; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: var(--display); font-size: 26px; text-align: center; }
+#rotate svg { width: 64px; height: 64px; }
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 540px) { #rotate { display: flex; } }
 </style>
 
+<div id="rotate"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="12" y="3" width="16" height="34" rx="4" fill="none" stroke="#ffc531" stroke-width="3"/><circle cx="20" cy="32" r="1.6" fill="#ffc531"/></svg>Turn your phone upright to play</div>
 <div id="app">
   <canvas id="c"></canvas>
   <div id="flash" aria-hidden="true"></div>
@@ -1809,7 +1814,6 @@ function nextUnlock() {
 
 function trackLength(def) { return def.arena ? '' : def.random ? '~950 m' : Math.round(def.segs.reduce((a, s) => a + s.len, 0)) + ' m'; }
 function renderMenu() {
-  try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
   if (trial && trial.used && state === 'menu') { endTrial(); finishOrder = []; createMarbles(); }
   $('menuTrial').textContent = trial ? `Trying ${findMarble(selMarble).name} for one race. Press Race!` : '';
   for (const [id, md] of MODE_TABS) $(id).setAttribute('aria-pressed', mode === md);
@@ -1893,8 +1897,8 @@ let mode = store.get('mode') || 'single', selCup = 0, gp = null;
 // on phones, a tap on Race takes the browser fullscreen (the installed app already is)
 function goFullscreen() {
   const d = document.documentElement;
-  // hold whichever way the phone is held (upright or sideways) so tilting it doesn't flip the view mid-race
-  const lock = () => { try { const o = screen.orientation; o && o.lock && o.lock((o.type || '').startsWith('portrait') ? 'portrait' : 'landscape').catch(() => {}); } catch (e) {} };
+  // the game is played upright only
+  const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait-primary').catch(() => {}); } catch (e) {} };
   if (!matchMedia('(pointer: coarse)').matches) return;
   if (document.fullscreenElement || !d.requestFullscreen || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return lock();
   try { d.requestFullscreen({ navigationUI: 'hide' }).then(lock, () => {}); } catch (e) {}

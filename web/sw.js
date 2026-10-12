@@ -1,5 +1,5 @@
 // Offline cache for the installed app. The version changes on every build so phones pick up updates.
-const CACHE = 'marble-mayhem-1021d10a74';
+const CACHE = 'marble-mayhem-d40dd1524c';
 const FILES = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'peerjs.min.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
