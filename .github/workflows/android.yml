@@ -20,6 +20,9 @@ concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -98,6 +101,27 @@ jobs:
       - name: Remove keystore
         if: always() && env.HAS_SIGNING == 'true'
         run: rm -f "$RUNNER_TEMP/upload-keystore.jks"
+
+      # Without the secrets, publish an unsigned AAB to the build-output branch
+      # so it can be signed elsewhere with the upload key.
+      - name: Build unsigned release AAB
+        if: env.HAS_SIGNING != 'true'
+        working-directory: android-app/android
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Push unsigned AAB to build-output branch
+        if: env.HAS_SIGNING != 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" && cd "$RUNNER_TEMP/out"
+          cp "$GITHUB_WORKSPACE"/android-app/android/app/build/outputs/bundle/release/*.aab app-release-unsigned.aab
+          echo "$GITHUB_SHA" > SOURCE_COMMIT
+          git init -q -b build-output
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "Unsigned AAB from $GITHUB_SHA"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" build-output
 
       - name: Note when release signing is skipped
         if: env.HAS_SIGNING != 'true'
