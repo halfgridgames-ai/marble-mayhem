@@ -1142,22 +1142,17 @@ function buildScene(track) {
     post.position.set(bottom.x, groundY + h / 2, bottom.z); post.castShadow = true;
     trackGroup.add(post);
   }
+  // spirals: a few slim posts around the outside, nothing inside the spiral or across the camera's view
   for (const [a, b] of track.helices) {
     const c = new V3(); let top = -Infinity;
     for (let k = a; k < b; k++) { c.add(S[k].p); top = Math.max(top, S[k].p.y); }
     c.divideScalar(b - a);
-    const h = top - groundY + 2;
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.4, h, 20), supMat);
-    col.position.set(c.x, groundY + h / 2, c.z); col.castShadow = true; col.receiveShadow = true;
-    trackGroup.add(col);
-    // spokes to the spiral
-    for (let k = a + 6; k < b; k += 18) {
-      const s = S[k]; const out = s.p.clone().addScaledVector(s.N, 0.2);
-      const d = new V3(out.x - c.x, 0, out.z - c.z); const len = d.length();
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, len), supMat);
-      spoke.position.set((out.x + c.x) / 2, out.y - 0.1, (out.z + c.z) / 2);
-      spoke.lookAt(out.x, out.y - 0.1, out.z);
-      trackGroup.add(spoke);
+    let rad = 0; for (let k = a; k < b; k++) rad = Math.max(rad, Math.hypot(S[k].p.x - c.x, S[k].p.z - c.z) + S[k].W + S[k].Rc);
+    const h = top - groundY - 0.4;
+    for (let i = 0; i < 6; i++) {
+      const ang = i / 6 * TAU, x = c.x + Math.cos(ang) * (rad + 0.5), z = c.z + Math.sin(ang) * (rad + 0.5);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, h, 8), supMat);
+      post.position.set(x, groundY + h / 2, z); post.castShadow = true; trackGroup.add(post);
     }
   }
   // obstacles
@@ -1794,7 +1789,7 @@ function arenaCamera(dt, me) {
   camera.position.lerp(want, 1 - Math.exp(-dt * 4));
   camLook.lerp(look, 1 - Math.exp(-dt * 6));
   camera.lookAt(camLook);
-  if (shake > 0.002) { camera.position.add(_t.set((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake)); shake *= Math.exp(-dt * 7); }
+  applyShake(dt);
 }
 
 // ---------- UI ----------
@@ -2873,7 +2868,18 @@ function updateRings(dt) {
     if (b.t > 0.35) { scene.remove(b.line); b.line.geometry.dispose(); bolts.splice(k, 1); }
   }
 }
-let shake = 0;
+let shake = 0, shakeT = 0;
+const calmMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// camera shake: a short, smooth wobble of the view direction (applied after lookAt, so it never drifts the camera)
+function applyShake(dt) {
+  if (shake < 0.003) { shake = 0; return; }
+  shakeT += dt;
+  const a = Math.min(shake, 0.4) * (calmMotion ? 0.025 : 0.075) * (1 - spiralCam * 0.5);
+  camera.rotateX(Math.sin(shakeT * 41.3) * a);
+  camera.rotateY(Math.sin(shakeT * 33.7 + 1.7) * a * 0.8);
+  camera.rotateZ(Math.sin(shakeT * 27.1 + 0.6) * a * 0.5);
+  shake *= Math.exp(-dt * 9);
+}
 function flash(color, strength = 0.6) {
   const el = document.getElementById('flash'); el.style.transition = 'none'; el.style.background = color; el.style.opacity = strength;
   requestAnimationFrame(() => { el.style.transition = 'opacity 0.5s ease-out'; el.style.opacity = 0; });
@@ -3297,7 +3303,7 @@ function update(dt) {
     if (!me.out) camera.position.lerp(want, 1 - Math.exp(-dt * (5 + spiralCam * 7)));
     camLook.lerp(look, 1 - Math.exp(-dt * 9));
     camera.lookAt(camLook);
-    if (shake > 0.002) { camera.position.add(_t.set((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake)); shake *= Math.exp(-dt * 7); }
+    applyShake(dt);
     const fovWant = 62 + clamp((me.v.length() - 12) * 0.45, 0, 10) + (me.rocketT > 0 ? 9 : 0);
     if (Math.abs(camera.fov - fovWant) > 0.05) { camera.fov += (fovWant - camera.fov) * (1 - Math.exp(-dt * 4)); camera.updateProjectionMatrix(); }
   }
