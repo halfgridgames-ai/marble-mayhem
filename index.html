@@ -1809,6 +1809,7 @@ function nextUnlock() {
 
 function trackLength(def) { return def.arena ? '' : def.random ? '~950 m' : Math.round(def.segs.reduce((a, s) => a + s.len, 0)) + ' m'; }
 function renderMenu() {
+  try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
   if (trial && trial.used && state === 'menu') { endTrial(); finishOrder = []; createMarbles(); }
   $('menuTrial').textContent = trial ? `Trying ${findMarble(selMarble).name} for one race. Press Race!` : '';
   for (const [id, md] of MODE_TABS) $(id).setAttribute('aria-pressed', mode === md);
@@ -1892,8 +1893,8 @@ let mode = store.get('mode') || 'single', selCup = 0, gp = null;
 // on phones, a tap on Race takes the browser fullscreen (the installed app already is)
 function goFullscreen() {
   const d = document.documentElement;
-  // keep the screen landscape so turning or tilting the phone doesn't flip the view mid-race
-  const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape-primary').catch(() => {}); } catch (e) {} };
+  // hold whichever way the phone is held (upright or sideways) so tilting it doesn't flip the view mid-race
+  const lock = () => { try { const o = screen.orientation; o && o.lock && o.lock((o.type || '').startsWith('portrait') ? 'portrait' : 'landscape').catch(() => {}); } catch (e) {} };
   if (!matchMedia('(pointer: coarse)').matches) return;
   if (document.fullscreenElement || !d.requestFullscreen || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return lock();
   try { d.requestFullscreen({ navigationUI: 'hide' }).then(lock, () => {}); } catch (e) {}
@@ -2903,9 +2904,9 @@ const sfx = (() => {
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    try { ctx = new AC(); } catch (e) { return; }
+    try { ctx = new AC({ latencyHint: 'balanced' }); } catch (e) { try { ctx = new AC(); } catch (e2) { return; } }
     master = ctx.createGain(); master.gain.value = 0.9;
-    const comp = ctx.createDynamicsCompressor(); master.connect(comp); comp.connect(ctx.destination);
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.01; comp.release.value = 0.25; master.connect(comp); comp.connect(ctx.destination);
     sfxGain = ctx.createGain(); sfxGain.gain.value = prefs.sound ? 0.8 : 0; sfxGain.connect(master);
     musicGain = ctx.createGain(); musicGain.gain.value = prefs.music ? 0.34 : 0; musicGain.connect(master);
     noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -2929,7 +2930,7 @@ const sfx = (() => {
     if (!ctx) return;
     const t = ctx.currentTime + Math.max(0, at); const src = ctx.createBufferSource(); src.buffer = noise;
     const fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t); if (to) fl.frequency.exponentialRampToValueAtTime(to, t + dur); fl.Q.value = q;
-    const g = ctx.createGain(); g.gain.setValueAtTime(Math.max(0.0002, vol), t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(fl); fl.connect(g); g.connect(dest); src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.05);
   }
   return {
@@ -2968,7 +2969,7 @@ const sfx = (() => {
   };
 })();
 
-// ---------- audio: a procedural lofi loop (dusty keys, soft drums, vinyl crackle) ----------
+// ---------- audio: a procedural lofi loop (clean keys, soft drums) ----------
 const music = (() => {
   let started = false, next = 0, step = 0, bus, send, wob;
   const BPM = 74, S16 = 60 / BPM / 4;
@@ -2984,15 +2985,11 @@ const music = (() => {
   }
   function start() {
     const ctx = sfx.ctx; if (started || !ctx) return; started = true;
-    bus = ctx.createBiquadFilter(); bus.type = 'lowpass'; bus.frequency.value = 2400; bus.Q.value = 0.4; bus.connect(sfx.musicBus);
+    bus = ctx.createBiquadFilter(); bus.type = 'lowpass'; bus.frequency.value = 6000; bus.Q.value = 0.4; bus.connect(sfx.musicBus);
     const delay = ctx.createDelay(1); delay.delayTime.value = S16 * 3;
     const fb = ctx.createGain(); fb.gain.value = 0.38; const dl = ctx.createBiquadFilter(); dl.type = 'lowpass'; dl.frequency.value = 1600;
     send = ctx.createGain(); send.gain.value = 0.5; send.connect(delay); delay.connect(dl); dl.connect(fb); fb.connect(delay); dl.connect(bus);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.4; wob = ctx.createGain(); wob.gain.value = 7; lfo.connect(wob); lfo.start();
-    const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.01 + (Math.random() < 0.00035 ? (Math.random() * 2 - 1) * 0.6 : 0);
-    const cr = ctx.createBufferSource(); cr.buffer = buf; cr.loop = true; const cf = ctx.createBiquadFilter(); cf.type = 'bandpass'; cf.frequency.value = 3000; cf.Q.value = 0.5;
-    const cg = ctx.createGain(); cg.gain.value = 0.55; cr.connect(cf); cf.connect(cg); cg.connect(sfx.musicBus); cr.start();
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.4; wob = ctx.createGain(); wob.gain.value = 2; lfo.connect(wob); lfo.start();
     next = ctx.currentTime + 0.15;
     setInterval(schedule, 25);
   }
@@ -3005,7 +3002,7 @@ const music = (() => {
     if (pos === 0) ch.forEach((n, i) => keys(n, at + i * 0.018, S16 * 15, 0.06));
     if (pos === 10 && bar % 2) ch.slice(1, 4).forEach((n, i) => keys(n + 12, at + i * 0.012, S16 * 5, 0.03));
     if (pos === 0 || pos === 7 || pos === 10) { const n = BASS[bar] + (pos === 10 ? 7 : 0); sfx.tone(mtof(n), S16 * 5, { vol: 0.2, at, attack: 0.02, dest: bus }); }
-    if (pos === 0 || pos === 10 || (pos === 7 && bar % 4 === 3)) { sfx.tone(130, 0.28, { vol: 0.55, to: 42, at, attack: 0.002, dest: bus }); }
+    if (pos === 0 || pos === 10 || (pos === 7 && bar % 4 === 3)) { sfx.tone(130, 0.28, { vol: 0.42, to: 42, at, attack: 0.002, dest: bus }); }
     if (pos === 4 || pos === 12) { sfx.burst(0.16, { f: 1700, q: 0.8, vol: 0.18, at, dest: bus }); sfx.tone(185, 0.09, { type: 'triangle', vol: 0.07, at, dest: bus }); }
     if (pos % 2 === 0) sfx.burst(pos === 14 && bar % 2 ? 0.18 : 0.035, { type: 'highpass', f: 7500, vol: pos % 4 ? 0.035 : 0.055, at, dest: bus });
     if (pos % 2 === 0 && Math.random() < 0.22) { const n = MEL[Math.floor(Math.random() * MEL.length)]; sfx.tone(mtof(n), 0.6, { vol: 0.045, at, attack: 0.01, dest: send }); sfx.tone(mtof(n), 0.5, { vol: 0.04, at, attack: 0.01, dest: bus }); }
