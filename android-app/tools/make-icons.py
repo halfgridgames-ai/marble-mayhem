@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Generate Android launcher icons + splash images from ../web/icon-512.png.
 
-Usage (from android-app/):  python3 tools/make-icons.py [path/to/icon.png]
+Usage (from android-app/):  python3 tools/make-icons.py [path/to/icon.png] [path/to/splash-lockup.png]
+The launcher icons stay text-free; the splash uses the lockup (icon + "Marble Mayhem" lettering,
+transparent PNG, default tools/splash-lockup.png) when it exists, else just the icon.
 Re-run whenever the game icon changes. Needs Pillow (pip install pillow).
 """
 import os
@@ -11,6 +13,7 @@ from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.dirname(HERE)
 SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(APP, "..", "web", "icon-512.png")
+LOCKUP = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "splash-lockup.png")
 RES = os.path.join(APP, "android", "app", "src", "main", "res")
 BG = (0x14, 0x1C, 0x3A, 255)  # #141c3a
 
@@ -54,16 +57,21 @@ def main():
         fg_px = round(108 * scale)
         src.resize((fg_px, fg_px), Image.LANCZOS).save(os.path.join(d, "ic_launcher_foreground.png"))
 
-    # Splash screens (shown while the WebView boots): icon centred on the game background colour.
+    # Splash screens (shown while the WebView boots): logo centred on the game background colour.
+    lockup = Image.open(LOCKUP).convert("RGBA") if os.path.exists(LOCKUP) else None
     for f in os.listdir(RES):
         p = os.path.join(RES, f, "splash.png")
         if f.startswith("drawable") and os.path.exists(p):
             w, h = Image.open(p).size
             img = Image.new("RGBA", (w, h), BG)
-            s = round(min(w, h) * 0.35)
-            art = src.resize((s, s), Image.LANCZOS)
-            art.putalpha(mask(s, "square"))
-            img.alpha_composite(art, ((w - s) // 2, (h - s) // 2))
+            if lockup:
+                k = min(w * 0.6 / lockup.width, h * 0.6 / lockup.height)
+                art = lockup.resize((round(lockup.width * k), round(lockup.height * k)), Image.LANCZOS)
+            else:
+                s = round(min(w, h) * 0.35)
+                art = src.resize((s, s), Image.LANCZOS)
+                art.putalpha(mask(s, "square"))
+            img.alpha_composite(art, ((w - art.width) // 2, (h - art.height) // 2))
             img.convert("RGB").save(p)
     print("icons written to", RES)
 
