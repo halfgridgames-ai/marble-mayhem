@@ -28,7 +28,10 @@ out = head + src[:body_split] + '\n</head>\n<body>\n' + src[body_split:] + '''
 import shutil
 shutil.copy(root / 'vendor' / 'peerjs.min.js', root / 'web' / 'peerjs.min.js')
 shutil.copy(root / 'privacy.html', root / 'web' / 'privacy.html')   # privacy policy page for the Play listing   # online play, loaded only when a room is opened
-ver = hashlib.sha1((out + (root / 'web' / 'manifest.webmanifest').read_text()).encode()).hexdigest()[:10]
+h = hashlib.sha1((out + (root / 'web' / 'manifest.webmanifest').read_text()).encode())
+for icon in ('icon-192.png', 'icon-512.png', 'apple-touch-icon.png'):   # new icons must bust the cache too
+    h.update((root / 'web' / icon).read_bytes())
+ver = h.hexdigest()[:10]
 sw = (root / 'sw-template.js').read_text().replace('__VERSION__', ver)
 (root / 'web' / 'sw.js').write_text(sw)
 print('built web/ version', ver)
