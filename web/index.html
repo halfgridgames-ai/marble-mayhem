@@ -106,6 +106,8 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 .itemslot .ic svg { width: 100%; height: 100%; display: block; }
 .itemslot .nm { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; font-size: 11px; font-weight: 800; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
 .itemslot:not(.has) .nm { display: none; }
+.itemslot .cnt { position: absolute; left: -6px; top: -6px; min-width: 24px; height: 24px; border-radius: 12px; background: #fff; color: #2a1a00; font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+.itemslot .cnt:empty { display: none; }
 .itemslot .k { position: absolute; right: -6px; bottom: -6px; font-size: 11px; background: var(--panel-solid); }
 .coarse .itemslot { top: auto; bottom: calc(172px + env(safe-area-inset-bottom, 0px)); width: 80px; height: 80px; }
 .coarse .itemslot .k { display: none; }
@@ -448,7 +450,7 @@ HGSplash.show();
     </div>
     <div class="minibox"><canvas id="mini" width="300" height="300"></canvas></div>
     <div class="standings" id="hStand"></div>
-    <button class="itemslot" id="itemSlot" aria-label="Use item"><span class="ic" id="itemIcon"></span><span class="nm" id="itemName">No item</span><kbd class="k">E</kbd></button>
+    <button class="itemslot" id="itemSlot" aria-label="Use item"><span class="ic" id="itemIcon"></span><span class="nm" id="itemName">No item</span><span class="cnt" id="itemCount"></span><kbd class="k">E</kbd></button>
     <div class="hud-speed"><span id="hSpeed">0</span><small>km/h</small></div>
     <div class="banner" id="hBanner" hidden></div>
     <div class="toast" id="hToast" hidden></div>
@@ -501,7 +503,7 @@ HGSplash.show();
         <button class="ghost" id="btnShop">Shop</button>
         <button class="ghost small" id="mMusic">Music on</button>
         <button class="ghost small" id="mSound">Sound on</button>
-        <div class="keys">Steer <kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · nudge <kbd>↑</kbd> · brake <kbd>↓</kbd> · camera <kbd>C</kbd><br>bump <kbd>Space</kbd> · use item <kbd>E</kbd> · music <kbd>M</kbd><br>Item boxes float over the outer rim of fast bends and high above jumps. On a phone, use the joystick and the buttons on the left.</div>
+        <div class="keys">Steer <kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · nudge <kbd>↑</kbd> · brake <kbd>↓</kbd> · camera <kbd>C</kbd><br>bump <kbd>Space</kbd> · use item <kbd>E</kbd> · music <kbd>M</kbd><br>Item boxes come in rows across the track, and bonus ones float over the rim of fast bends and high above jumps. Leaders get defensive items, marbles at the back get the big ones. On a phone, use the joystick and the buttons on the left.</div>
       </div>
     </div>
   </div>
@@ -1401,6 +1403,15 @@ function buildScene(track) {
     }
     if (seg.gap) { const k = Math.floor((a + b) / 2), s = S[k]; addBox(s.p.clone().addScaledVector(s.N, 2.3), 'air', k); }
   });
+  // plus a row of boxes straight across the track every so often, so everyone gets a go
+  const ROW_EVERY = Math.round(55 / DS), clear = Math.round(4 / DS);
+  for (let k = Math.round(30 / DS); k < S.length - Math.round(20 / DS); k += ROW_EVERY) {
+    let j = k;
+    while (j < k + ROW_EVERY / 2 && (S[j].gap || S[j].div || S[j].helix || track.obs.some(o => Math.abs(o.idx - j) < clear) || track.boxes.some(b => Math.abs(b.idx - j) < clear * 2))) j++;
+    if (j >= k + ROW_EVERY / 2 || (track.finishIdx > 0 && Math.abs(j - track.finishIdx) < clear * 3)) continue;
+    const s = S[j], n = s.W > 3.2 ? 4 : 3;
+    for (let q = 0; q < n; q++) addBox(s.p.clone().addScaledVector(s.B, (q - (n - 1) / 2) * (2 * s.W / n) * 0.9).addScaledVector(s.N, 0.75), 'row', j);
+  }
   // bounds + ground
   const box = new THREE.Box3(); S.forEach(s => box.expandByPoint(s.p));
   const groundY = box.min.y - 7;
@@ -1556,7 +1567,9 @@ const keys = {};
 
 function createMarbles(netSetup) {
   for (const m of marbles) { scene.remove(m.mesh); if (m.aura) scene.remove(m.aura.group); if (m.rider) scene.remove(m.rider); }
-  if (track.slicks) { for (const sl of track.slicks) if (sl.mesh) scene.remove(sl.mesh); track.slicks = []; }
+  if (track.peels) { for (const pl of track.peels) if (pl.mesh) peelGone(pl.mesh); track.peels = []; }
+  if (track.bees) { for (const b of track.bees) if (b.mesh) scene.remove(b.mesh); track.bees = []; }
+  for (const pl of netPeels) peelGone(pl.mesh); netPeels = [];
   if (window.__arrow) scene.remove(window.__arrow);
   marbles = [];
   const slots = [];
@@ -1746,6 +1759,7 @@ function stepPhysics(dt) {
     const contact = simTime - m.contactT < 0.06;
     m.v.y -= G * dt;
     if (m.rocketT > 0) { m.rocketT -= dt; m.v.addScaledVector(s.T, 26 * dt); }
+    if (m.magT > 0) magnetPull(m, s, dt);
     if (m.phaseT > 0) { m.phaseT -= dt; if (contact) m.v.addScaledVector(s.T, 7 * dt); }
     if (m.zapT > 0) { m.zapT -= dt; m.v.multiplyScalar(1 - 2.4 * dt); }
     if (m.shieldT > 0) m.shieldT -= dt;
@@ -2496,7 +2510,7 @@ const PEERJS_SRC = ['peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 let net = null;
 let netName = store.get('name') || 'Player ' + (10 + Math.floor(Math.random() * 90));
-const FLAG = { out: 1, fin: 2, rocket: 4, phase: 8, zap: 16, shield: 32, mega: 64, slip: 128 };
+const FLAG = { out: 1, fin: 2, rocket: 4, phase: 8, zap: 16, shield: 32, mega: 64, slip: 128, mag: 256 };
 function loadPeerLib() {
   if (window.Peer) return Promise.resolve();
   return PEERJS_SRC.reduce((p, src) => p.catch(() => new Promise((res, rej) => {
@@ -2663,7 +2677,7 @@ $('onJoin').addEventListener('click', () => { sfx.init(); sfx.ui(); joinRoom(); 
 $('onCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); e.stopPropagation(); });
 $('onName').addEventListener('keydown', e => e.stopPropagation());
 $('onLeave').addEventListener('click', () => { sfx.ui(); leaveRoom(''); });
-function netEvent(type, m) { if (net && net.role === 'host' && net.racing) net.events.push([type, m.i]); }
+function netEvent(type, m, o) { if (net && net.role === 'host' && net.racing) net.events.push(o ? [type, m.i, o.i] : [type, m.i]); }
 const r2 = v => Math.round(v * 100) / 100;
 function netBroadcast() {
   const now = performance.now();
@@ -2671,8 +2685,8 @@ function netBroadcast() {
   net.lastSend = now;
   const msg = { t: 's', st: state, rt: r2(raceTime), sim: r2(simTime), cd: r2(countdown),
     m: marbles.map(m => [r2(m.p.x), r2(m.p.y), r2(m.p.z), r2(m.v.x), r2(m.v.y), r2(m.v.z), m.idx,
-      (m.out ? FLAG.out : 0) | (m.finished ? FLAG.fin : 0) | (m.rocketT > 0 ? FLAG.rocket : 0) | (m.phaseT > 0 ? FLAG.phase : 0) | (m.zapT > 0 ? FLAG.zap : 0) | (m.shieldT > 0 ? FLAG.shield : 0) | (m.megaT > 0 ? FLAG.mega : 0) | (simTime < (m.slipUntil || 0) ? FLAG.slip : 0),
-      m.item ? ITEM_KEYS.indexOf(m.item) : -1, m.finished ? r2(m.finishTime) : 0, m.respawns]),
+      (m.out ? FLAG.out : 0) | (m.finished ? FLAG.fin : 0) | (m.rocketT > 0 ? FLAG.rocket : 0) | (m.phaseT > 0 ? FLAG.phase : 0) | (m.zapT > 0 ? FLAG.zap : 0) | (m.shieldT > 0 ? FLAG.shield : 0) | (m.megaT > 0 ? FLAG.mega : 0) | (simTime < (m.slipUntil || 0) ? FLAG.slip : 0) | (m.magT > 0 ? FLAG.mag : 0),
+      m.item ? ITEM_KEYS.indexOf(m.item) : -1, m.finished ? r2(m.finishTime) : 0, m.respawns, m.itemN || 0]),
     fo: finishOrder.map(m => m.i), ar: track.arena ? track.dropped : 0, bx: track.boxes.map((b, k) => simTime < b.back ? k : -1).filter(k => k >= 0), ev: net.events.splice(0) };
   for (const c of net.conns.values()) if (c.open) c.send(msg);
 }
@@ -2697,10 +2711,10 @@ function netSnapshot(d) {
     m.idx = a[6];
     const f = a[7], wasOut = m.out;
     m.out = !!(f & FLAG.out); m.rocketT = f & FLAG.rocket ? 0.2 : 0; m.phaseT = f & FLAG.phase ? 0.2 : 0; m.zapT = f & FLAG.zap ? 0.2 : 0;
-    m.shieldT = f & FLAG.shield ? 0.2 : 0; m.megaT = f & FLAG.mega ? 0.2 : 0; m.slipUntil = f & FLAG.slip ? simTime + 0.2 : 0;
+    m.shieldT = f & FLAG.shield ? 0.2 : 0; m.megaT = f & FLAG.mega ? 0.2 : 0; m.slipUntil = f & FLAG.slip ? simTime + 0.2 : 0; m.magT = f & FLAG.mag ? 0.2 : 0;
     const item = a[8] >= 0 ? ITEM_KEYS[a[8]] : null;
     if (m.player && item && !m.item) { m.itemReadyAt = simTime + 0.9; sfx.box(); }
-    m.item = item; m.respawns = a[10];
+    m.item = item; m.itemN = a[11] || 0; m.respawns = a[10];
     if (m.player && m.out !== wasOut) { if (m.out) { toast('Off the track! Dropping you back in…'); sfx.fall(); } else toast(''); }
     if ((f & FLAG.fin) && !m.finished) { m.finished = true; m.finishTime = a[9]; if (track.arena) m.elim = true; }
   });
@@ -2710,7 +2724,7 @@ function netSnapshot(d) {
   if (me.finished && !me.payout && state === 'race') (track.arena ? arenaPlayerDone : onPlayerFinish)();
   const gone = new Set(d.bx);
   track.boxes.forEach((b, k) => { b.back = gone.has(k) ? simTime + 1 : 0; });
-  for (const [type, i] of d.ev) netFx(type, marbles[i]);
+  for (const [type, i, j] of d.ev) netFx(type, marbles[i], marbles[j]);
 }
 function netApply(dt) {
   const now = performance.now();
@@ -2724,15 +2738,23 @@ function netApply(dt) {
     if (!m.out) m.contactT = simTime;
   }
 }
-function netFx(type, m) {
+function netFx(type, m, o) {
   if (!m) return;
   const near = m.p.distanceTo(camera.position) < 45, me = marbles[playerIdx];
   if (type === 'bump') { if (near) sfx.bump(); bumpFx(m, m.megaT > 0); }
   else if (type === 'shield') { shieldFx(m); if (near) sfx.shield(); }
   else if (type === 'mega') { megaFx(m); if (near) sfx.mega(); }
-  else if (type === 'oil') { const pos = m.p.clone().addScaledVector(m.v, -0.25); slickVisual(pos); if (near) sfx.oil(); }
+  else if (type === 'banana') { const pos = m.p.clone().addScaledVector(m.v, -0.25); peelVisual(pos); if (near) sfx.peel(); }
+  else if (type === 'bee') { if (o) launchBee(m, o); if (near) sfx.bee(); }
+  else if (type === 'sting') { stingFx(m); if (m.p.distanceTo(camera.position) < 45) sfx.sting(); const b = (track.bees || []).find(b => b.target === m); if (b) b.t = 99; if (m === me) { toast('Stung by a bee!'); setTimeout(() => toast(''), 1300); } }
+  else if (type === 'magnet') { magnetFx(m); if (near) sfx.magnet(); }
   else if (type === 'pop') { ring(m.p, '#25d99a', 3); emit(m.p, 30, { color: '#9dffd9', speed: 6, life: 0.5, grav: 0.2 }); if (near) sfx.pop(); }
-  else if (type === 'slip') { emit(m.p, 18, { color: '#8d7bff', speed: 4, life: 0.5, up: 0.6 }); if (near) sfx.slip(); if (m === me) { toast('Oil slick! Spinning out…'); setTimeout(() => toast(''), 1200); } }
+  else if (type === 'slip') {
+    emit(m.p, 18, { color: '#ffd23f', speed: 4, life: 0.5, up: 0.6 }); if (near) sfx.slip();
+    let k = -1, best = 3; netPeels.forEach((pl, j) => { const d = pl.pos.distanceTo(m.p); if (d < best) { best = d; k = j; } });
+    if (k >= 0) { peelGone(netPeels[k].mesh); netPeels.splice(k, 1); }
+    if (m === me) { toast('Banana! Spinning out…'); setTimeout(() => toast(''), 1200); }
+  }
   else if (type === 'box') { emit(m.p, 30, { rainbow: true, speed: 6, life: 0.6 }); }
   else if (type === 'rocket') { rocketFx(m); if (near) sfx.rocket(); if (m.player) { flash('#ff9a3c', 0.25); shake = 0.25; } }
   else if (type === 'phase') { phaseFx(m); if (near) sfx.phase(); }
@@ -3131,23 +3153,80 @@ function bumpFx(m, big) {
   if (big) { ring(m.p, '#ff3d6e', 4); flareAt(m.p, '#ff7a9a', 4); if (m.player || m.p.distanceTo(camera.position) < 14) shake = Math.max(shake, 0.35); }
   if (m.p.distanceTo(camera.position) < 45) sfx.bump();
 }
-const slickTex = (() => {
-  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-  const gr = g.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, '#1a1030'); gr.addColorStop(0.7, '#2a1650'); gr.addColorStop(0.92, 'rgba(60,30,110,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-  g.globalCompositeOperation = 'lighter';   // rainbow sheen like oil on water
-  ['#ff3dbb', '#ffe14d', '#39f5ff', '#7b5cff'].forEach((col, i) => { g.strokeStyle = col; g.globalAlpha = 0.35; g.lineWidth = 5; g.beginPath(); g.ellipse(58 + i * 3, 60 + i * 2, 20 + i * 9, 14 + i * 7, i * 0.6, 0, TAU); g.stroke(); });
-  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
-})();
-function slickMesh(pos, N) {
-  const mesh = new THREE.Mesh(new THREE.CircleGeometry(1.35, 32), new THREE.MeshStandardMaterial({ map: slickTex, transparent: true, roughness: 0.08, metalness: 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
-  mesh.position.copy(pos); mesh.quaternion.setFromUnitVectors(new V3(0, 0, 1), N); mesh.rotateZ(Math.random() * TAU);
-  scene.add(mesh); emit(pos, 16, { color: '#6b4cff', speed: 3, life: 0.5, up: 0.5 }); return mesh;
+function bananaMesh() {   // a cartoon peel: the stalk with four flaps flopped out across the track
+  const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, ...o });
+  const yel = M('#ffd83a'), brown = M('#6b4a1e');
+  // the stalk: a curved stub standing up in the middle
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.15, 0.32, 14), yel); body.position.y = 0.2; body.rotation.z = 0.12; g.add(body);
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.1, 10), brown); tip.position.set(0.025, 0.4, 0); tip.rotation.z = 0.15; g.add(tip);
+  // four peel flaps that droop from the top of the stalk and flop out across the track
+  const flapGeo = (() => {
+    const NT = 14, NW = 5, pos = [], idx = [];
+    for (let i = 0; i <= NT; i++) {
+      const t = i / NT, r = 0.1 + 0.5 * t, y = 0.36 * (1 - t) * (1 - t) + 0.025 + 0.05 * t ** 4;
+      const w = 0.2 * (1 - t ** 1.6) + 0.025;
+      for (let j = 0; j <= NW; j++) { const u = j / NW * 2 - 1; pos.push(r, y - 0.05 * u * u + 0.02, u * w); }
+    }
+    for (let i = 0; i < NT; i++) for (let j = 0; j < NW; j++) { const a = i * (NW + 1) + j, b = a + NW + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+  })();
+  const outside = M('#ffc800', { side: THREE.BackSide }), inside = M('#fff0b0', { side: THREE.FrontSide });   // the yellow skin faces up
+  for (let k = 0; k < 4; k++) {
+    const flap = new THREE.Group(); flap.rotation.y = k / 4 * TAU + 0.4 + (k % 2) * 0.25; g.add(flap);
+    flap.add(new THREE.Mesh(flapGeo, outside), new THREE.Mesh(flapGeo, inside));
+    const end = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), brown); end.position.set(0.6, 0.07, 0); flap.add(end);
+  }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
 }
-function slickVisual(pos) {   // online guests only need the picture; the host decides who slips
-  const mesh = slickMesh(pos, track.arena ? arenaNormal(pos).clone() : UP);
-  scene.remove(mesh); addFx(mesh, track.arena ? 9 : 12, f => { mesh.material.opacity = f > 0.9 ? (1 - f) * 10 : 1; });
+function beeMesh() {   // the Bumblebee item: flies after the marble ahead
+  const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.4, ...o });
+  const c = document.createElement('canvas'); c.width = 64; c.height = 256; const x = c.getContext('2d');
+  x.fillStyle = '#ffc61a'; x.fillRect(0, 0, 64, 256); x.fillStyle = '#1b1410';
+  for (const s of [40, 100, 160]) x.fillRect(0, s, 64, 30);   // bands of latitude, so stripes wrap round the body
+  const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+  const bgeo = new THREE.SphereGeometry(0.3, 24, 16); bgeo.rotateX(Math.PI / 2);
+  const body = new THREE.Mesh(bgeo, M('#ffffff', { map: tex, emissive: '#3a2600', emissiveIntensity: 0.3 }));
+  body.scale.set(0.9, 0.85, 1.35); g.add(body);
+  const blk = M('#1b1410'), wht = M('#ffffff');
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), blk); head.position.set(0, 0.04, 0.42); g.add(head);
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), wht); eye.position.set(sx * 0.09, 0.1, 0.56); g.add(eye);
+    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), blk); pup.position.set(sx * 0.09, 0.11, 0.625); g.add(pup);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 6), blk); ant.position.set(sx * 0.08, 0.28, 0.48); ant.rotation.set(0.5, 0, -sx * 0.35); g.add(ant);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), blk); knob.position.set(sx * 0.12, 0.38, 0.54); g.add(knob);
+    const wing = new THREE.Mesh(new THREE.CircleGeometry(0.26, 20), new THREE.MeshStandardMaterial({ color: '#e8f6ff', transparent: true, opacity: 0.72, side: THREE.DoubleSide, roughness: 0.1, emissive: '#bfe8ff', emissiveIntensity: 0.5 }));
+    wing.scale.set(0.6, 1, 1); const piv = new THREE.Group(); piv.position.set(sx * 0.06, 0.24, 0.05); piv.add(wing);
+    wing.position.set(sx * 0.2, 0.06, 0); wing.rotation.set(-Math.PI / 2, 0, 0);
+    g.add(piv); g.userData['wing' + (sx < 0 ? 'L' : 'R')] = piv;
+  }
+  const sting = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.18, 10), blk); sting.position.set(0, -0.02, -0.46); sting.rotation.x = -Math.PI / 2; g.add(sting);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
 }
+function magnetMesh() {   // hovers over a marble while its Magnet reels it in
+  const g = new THREE.Group();
+  const red = new THREE.MeshStandardMaterial({ color: '#ff3d4d', roughness: 0.35 }), steel = new THREE.MeshStandardMaterial({ color: '#dfe6ee', metalness: 0.7, roughness: 0.2 });
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.11, 12, 24, Math.PI), red); arc.position.y = 0.3; g.add(arc);
+  for (const sx of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.16, 16), red); leg.position.set(sx * 0.3, 0.22, 0); g.add(leg);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.14, 16), steel); t.position.set(sx * 0.3, 0.07, 0); g.add(t);
+  }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+function peelMesh(pos, N) {
+  const mesh = bananaMesh(); mesh.scale.setScalar(1.35); mesh.position.copy(pos); mesh.quaternion.setFromUnitVectors(UP, N); mesh.rotateY(Math.random() * TAU);
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), peelShadow); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.015; mesh.add(sh);
+  scene.add(mesh); emit(pos, 12, { color: '#ffd23f', speed: 3, life: 0.45, up: 0.5 }); return mesh;
+}
+const peelShadow = new THREE.MeshBasicMaterial({ map: dotTex, color: '#2a1400', transparent: true, opacity: 0.55, depthWrite: false });
+function peelVisual(pos) {   // online guests only need the picture; the host decides who slips
+  const mesh = peelMesh(pos, track.arena ? arenaNormal(pos).clone() : UP);
+  scene.remove(mesh); addFx(mesh, track.arena ? 9 : 14, () => {}); netPeels.push({ pos, mesh });
+}
+let netPeels = [];
+function peelGone(mesh) { scene.remove(mesh); mesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
 // glows and gadgets that ride along with a marble: rocket flame, shield bubble, phase rings, Mega glow
 function auraFor(m) {
   if (m.aura) return m.aura;
@@ -3163,10 +3242,11 @@ function auraFor(m) {
   for (let k = 0; k < 2; k++) { const t = new THREE.Mesh(new THREE.TorusGeometry(R * 1.6, 0.035, 6, 40), addMat('#c9a8ff', 0.8)); t.rotation.x = k ? 1.1 : -0.5; t.rotation.y = k * 1.6; orbit.add(t); }
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: '#ffffff', blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.8 }));
   halo.scale.setScalar(R * 5);
-  group.add(flame, bubble, orbit, halo);
-  flame.visible = bubble.visible = orbit.visible = halo.visible = false;
+  const mag = magnetMesh(); mag.scale.setScalar(0.9);
+  group.add(flame, bubble, orbit, halo, mag);
+  flame.visible = bubble.visible = orbit.visible = halo.visible = mag.visible = false;
   scene.add(group);
-  return m.aura = { group, flame, bubble, orbit, halo };
+  return m.aura = { group, flame, bubble, orbit, halo, mag };
 }
 const _q = new THREE.Quaternion(), _dn = new V3();
 function updateAuras(dt) {
@@ -3183,6 +3263,12 @@ function updateAuras(dt) {
     }
     a.bubble.visible = shield;
     if (shield) { a.bubble.rotation.y += dt * 1.5; a.bubble.rotation.x += dt * 0.7; const pl = 1 + Math.sin(t * 6) * 0.05; a.bubble.scale.setScalar(pl * (mega ? 1.55 : 1)); a.bubble.children[0].material.opacity = m.shieldT < 1.5 && Math.sin(t * 20) > 0 ? 0.05 : 0.18; }
+    a.mag.visible = m.magT > 0;
+    if (m.magT > 0) {   // the magnet hangs just above the marble, poles pointing at whoever it is reeling in
+      a.mag.position.set(0, R + (m.rider ? 1.3 : 0.55) + Math.sin(t * 8) * 0.06, 0);
+      if (m.magTarget) { _dn.subVectors(m.magTarget.p, m.p); a.mag.rotation.set(0, Math.atan2(_dn.x, _dn.z), 0); a.mag.rotateX(Math.PI / 2); }
+      if (m.magTarget && Math.random() < 0.6) emit(_t.copy(m.p).lerp(m.magTarget.p, Math.random()), 1, { color: '#ff8a94', speed: 0.4, life: 0.35, grav: 0 });
+    }
     a.orbit.visible = phase;
     if (phase) { a.orbit.rotation.y += dt * 4; a.orbit.rotation.z += dt * 2.5; }
     // the glow: Mega's red pulse, or a legendary marble's own colour
@@ -3343,7 +3429,10 @@ const sfx = (() => {
     shield() { [660, 990, 1320].forEach((f, i) => tone(f, 0.4, { type: 'triangle', vol: 0.09, at: i * 0.05 })); burst(0.3, { type: 'highpass', f: 3500, vol: 0.06 }); },
     pop() { if (!ok('pop', 0.1)) return; tone(900, 0.12, { type: 'triangle', vol: 0.18, to: 260 }); burst(0.18, { type: 'highpass', f: 2500, vol: 0.2 }); },
     mega() { tone(110, 0.8, { type: 'sawtooth', vol: 0.12, to: 55 }); [262, 330, 392].forEach((f, i) => tone(f, 0.5, { type: 'square', vol: 0.05, at: i * 0.08 })); },
-    oil() { burst(0.35, { type: 'lowpass', f: 700, to: 200, vol: 0.4 }); tone(180, 0.3, { vol: 0.12, to: 90 }); },
+    peel() { tone(520, 0.12, { type: 'triangle', vol: 0.12, to: 260 }); burst(0.12, { type: 'lowpass', f: 900, vol: 0.25 }); },
+    bee() { tone(190, 0.9, { type: 'sawtooth', vol: 0.05, to: 240 }); tone(196, 0.9, { type: 'sawtooth', vol: 0.04, to: 250 }); },
+    sting() { if (!ok('sting', 0.2)) return; tone(1600, 0.12, { type: 'square', vol: 0.07, to: 700 }); tone(420, 0.3, { type: 'square', vol: 0.06, to: 160, at: 0.08 }); },
+    magnet() { [330, 440, 554, 660].forEach((f, i) => tone(f, 0.25, { type: 'sine', vol: 0.09, at: i * 0.05 })); tone(90, 0.6, { type: 'sawtooth', vol: 0.05, to: 140 }); },
     slip() { if (!ok('slip', 0.3)) return; tone(1400, 0.5, { type: 'sine', vol: 0.08, to: 300 }); burst(0.25, { f: 1800, q: 4, vol: 0.12 }); },
     finish(win) { const seq = win ? [523, 659, 784, 1046, 784, 1046, 1318] : [523, 659, 784, 1046]; seq.forEach((f, i) => { tone(f, 0.3, { type: 'square', vol: 0.06, at: i * 0.11 }); tone(f / 2, 0.35, { type: 'triangle', vol: 0.08, at: i * 0.11 }); }); },
     ui() { if (!ok('ui', 0.03)) return; tone(660, 0.05, { type: 'triangle', vol: 0.07 }); },
@@ -3406,47 +3495,131 @@ const ITEMS = {
     svg: '<svg viewBox="0 0 40 40"><path d="M20 3l14 5v10c0 9-6 15-14 19C12 33 6 27 6 18V8z" fill="#fff"/><path d="M14 19l4 4 8-9" fill="none" stroke="#25d99a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
   mega: { name: 'Mega', color: '#ff3d6e', tip: 'Grow huge and smash rivals aside',
     svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="22" r="13" fill="#fff"/><path d="M20 2v9M14 6l6-5 6 5" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="19" r="3" fill="#ff3d6e" opacity=".5"/></svg>' },
-  oil: { name: 'Oil Slick', color: '#6b4cff', tip: 'Drop a slick that spins rivals out',
-    svg: '<svg viewBox="0 0 40 40"><path d="M20 4c6 9 10 14 10 19a10 10 0 0 1-20 0c0-5 4-10 10-19z" fill="#fff"/><ellipse cx="20" cy="35" rx="14" ry="3.5" fill="#fff" opacity=".6"/></svg>' },
+  banana: { name: 'Banana', color: '#ffc61a', tip: 'Drop a peel that spins rivals out',
+    svg: '<svg viewBox="0 0 40 40"><path d="M7 8C5 22 15 34 33 32c2 0 3-3 1-4C22 27 16 19 15 8c0-3-8-3-8 0z" fill="#fff"/><path d="M8 3h5l1 6H8z" fill="#6b4a1e"/></svg>' },
+  bananas: { name: 'Triple Banana', color: '#ffb000', tip: 'Three peels to drop one at a time', n: 3,
+    svg: '<svg viewBox="0 0 40 40"><g transform="rotate(-28 30 34) translate(3 2) scale(.82)" opacity=".8"><path d="M7 8C5 22 15 34 33 32c2 0 3-3 1-4C22 27 16 19 15 8c0-3-8-3-8 0z" fill="#fff"/><path d="M8 3h5l1 6H8z" fill="#6b4a1e"/></g><g transform="rotate(24 30 34) translate(3 2) scale(.82)" opacity=".8"><path d="M7 8C5 22 15 34 33 32c2 0 3-3 1-4C22 27 16 19 15 8c0-3-8-3-8 0z" fill="#fff"/><path d="M8 3h5l1 6H8z" fill="#6b4a1e"/></g><g transform="translate(3 2) scale(.85)"><path d="M7 8C5 22 15 34 33 32c2 0 3-3 1-4C22 27 16 19 15 8c0-3-8-3-8 0z" fill="#fff"/><path d="M8 3h5l1 6H8z" fill="#6b4a1e"/></g></svg>' },
+  bee: { name: 'Bumblebee', color: '#ffb81a', tip: 'Chases the marble ahead and stings it',
+    svg: '<svg viewBox="0 0 40 40"><ellipse cx="13" cy="11" rx="6" ry="8" fill="#fff" opacity=".75" transform="rotate(-25 13 11)"/><ellipse cx="25" cy="10" rx="6" ry="8" fill="#fff" opacity=".75" transform="rotate(20 25 10)"/><ellipse cx="20" cy="24" rx="12" ry="10" fill="#fff"/><path d="M15 15v19M22 14v20" stroke="#ffb81a" stroke-width="4"/><circle cx="29" cy="22" r="2" fill="#ffb81a"/><path d="M7 25l-5 2 5 1z" fill="#fff"/></svg>' },
+  magnet: { name: 'Magnet', color: '#ff3d4d', tip: 'Reels you in towards the marble ahead',
+    svg: '<svg viewBox="0 0 40 40"><path d="M8 20V8h8v12a4 4 0 0 0 8 0V8h8v12a12 12 0 0 1-24 0z" fill="#fff"/><path d="M8 8h8v5H8zM24 8h8v5h-8z" fill="#ffd0d4"/></svg>' },
 };
 const ITEM_KEYS = Object.keys(ITEMS);
 function raceOrder() { return marbles.slice().sort((a, b) => (b.finished - a.finished) || (a.finished ? a.finishTime - b.finishTime : b.idx - a.idx)); }
+// item odds by position, like a kart racer: the leader mostly gets defence, the back of the pack the big catch-up items
+const ITEM_TIERS = [
+  { upTo: 1, w: { banana: 5, bananas: 2, shield: 3, shock: 1 } },
+  { upTo: 3, w: { banana: 3, bananas: 2.5, shield: 2, shock: 2, bee: 2, phase: 1 } },
+  { upTo: 6, w: { bananas: 1, shock: 2, phase: 2, bee: 3, mega: 2, rocket: 1.5, magnet: 1.2 } },
+  { upTo: 99, w: { rocket: 3, magnet: 2.5, mega: 2, bee: 2, zap: 1.5, phase: 1 } },
+];
+const ARENA_ITEMS = { rocket: 1.2, shock: 3.5, phase: 2, zap: 1.2, shield: 3, mega: 3, banana: 2, bananas: 1, bee: 1.5 };
 function rollItem(m) {
-  const place = raceOrder().indexOf(m) + 1;   // marbles further back get the stronger catch-up items
-  const w = track.arena ? { rocket: 1.2, shock: 3.5, phase: 2, zap: 1.2, shield: 3, mega: 3, oil: 3 }
-    : { rocket: 1 + place * 0.8, shock: 3, phase: 2.5, zap: Math.max(0, place - 3) * 1.3, shield: 2, mega: 1.2 + place * 0.2, oil: 3 - place * 0.2 };
-  let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0);
-  for (const k of ITEM_KEYS) { r -= w[k]; if (r <= 0) return k; }
-  return 'rocket';
+  const place = raceOrder().indexOf(m) + 1;
+  // scale the tiers to the field, so a 1v1 online race still has a leader and a chaser
+  const scaled = Math.ceil(place * 8 / Math.max(2, marbles.length));
+  const w = track.arena ? ARENA_ITEMS : ITEM_TIERS.find(t => scaled <= t.upTo).w;
+  const keys = Object.keys(w);
+  let r = Math.random() * keys.reduce((a, k) => a + w[k], 0);
+  for (const k of keys) { r -= w[k]; if (r <= 0) return k; }
+  return keys[0];
 }
 function giveItem(m) {
-  m.item = rollItem(m); m.itemReadyAt = simTime + (m.player ? 0.9 : 0); m.useAt = simTime + 1 + Math.random() * 3;
+  m.item = rollItem(m); m.itemN = ITEMS[m.item].n || 1; m.itemReadyAt = simTime + (m.player ? 0.9 : 0); m.useAt = simTime + 1 + Math.random() * 3;
 }
-// a shield soaks up one hit: shockwave, lightning, a bump or an oil slick
+// a shield soaks up one hit: shockwave, lightning, a bump, a banana or a bee
 function blocked(o) {
   if (!(o.shieldT > 0)) return false;
   o.shieldT = 0; netEvent('pop', o);
   if (!simulating) { ring(o.p, '#25d99a', 3); emit(o.p, 30, { color: '#9dffd9', speed: 6, life: 0.5, grav: 0.2 }); if (o.p.distanceTo(camera.position) < 45) sfx.pop(); }
   return true;
 }
-function dropSlick(m) {
-  const pos = m.p.clone();
-  if (track.arena) pos.addScaledVector(m.v, -0.25);
-  else { const s = track.S[Math.max(0, m.idx - 4)], x = _t.subVectors(m.p, track.S[m.idx].p).dot(track.S[m.idx].B); pos.copy(s.p).addScaledVector(s.B, x).addScaledVector(s.N, 0.04); }
-  if (track.arena) { const r = Math.hypot(pos.x, pos.z); pos.y = arenaY(clamp(r, ARENA.hole, track.edge)) + 0.04; }
-  const sl = { pos, until: simTime + (track.arena ? 9 : 12), owner: m, safe: simTime + 1.2, hit: new Set(), mesh: null };
-  if (!simulating) sl.mesh = slickMesh(pos, track.arena ? arenaNormal(pos).clone() : track.S[Math.max(0, m.idx - 4)].N);
-  track.slicks = track.slicks || []; track.slicks.push(sl);
+function dropBanana(m) {
+  const pos = m.p.clone(); let N = UP;
+  if (track.arena) { pos.addScaledVector(m.v, -0.25); const r = Math.hypot(pos.x, pos.z); pos.y = arenaY(clamp(r, ARENA.hole, track.edge)) + 0.02; N = arenaNormal(pos).clone(); }
+  else { const s = track.S[Math.max(0, m.idx - 4)], x = _t.subVectors(m.p, track.S[m.idx].p).dot(track.S[m.idx].B); pos.copy(s.p).addScaledVector(s.B, x).addScaledVector(s.N, 0.02); N = s.N; }
+  const pl = { pos, until: simTime + (track.arena ? 9 : 14), owner: m, safe: simTime + 1.2, mesh: null };
+  if (!simulating) pl.mesh = peelMesh(pos, N);
+  track.peels = track.peels || []; track.peels.push(pl);
 }
+// the Bumblebee flies to the marble one place ahead (the leader's goes after second place) and stings it
+function launchBee(m, target) {
+  const b = { pos: m.p.clone().add(_t.set(0, 0.8, 0)), vel: m.v.clone(), owner: m, target, t: 0, mesh: null };
+  if (!simulating) { b.mesh = beeMesh(); b.mesh.scale.setScalar(1.6); b.mesh.position.copy(b.pos); scene.add(b.mesh); }
+  track.bees = track.bees || []; track.bees.push(b);
+}
+function beeTarget(m) {
+  const order = raceOrder().filter(o => !o.finished && !o.out), k = order.indexOf(m);
+  if (track.arena) return marbles.filter(o => o !== m && !o.finished).sort((a, b) => a.p.distanceTo(m.p) - b.p.distanceTo(m.p))[0];
+  return k > 0 ? order[k - 1] : order[1];
+}
+const _bw = new V3();
+function updateBees(dt) {
+  if (!track.bees || !track.bees.length) return;
+  for (let k = track.bees.length - 1; k >= 0; k--) {
+    const b = track.bees[k], o = b.target; b.t += dt;
+    const aim = _bw.copy(o.p).add(_t.set(0, 0.55 + Math.sin(b.t * 9) * 0.15, 0));
+    const d = aim.sub(b.pos), dist = d.length();
+    // speeds up as it goes, so it always catches a marble that is pulling away
+    const sp = Math.max(18, o.v.length() + 9 + b.t * 4);
+    b.vel.lerp(d.multiplyScalar(sp / Math.max(dist, 1e-3)), 1 - Math.exp(-dt * 5));
+    b.pos.addScaledVector(b.vel, dt);
+    const hit = b.pos.distanceTo(o.p) < 1.0 && !(net && net.role === 'client');   // guests wait for the host to say it stung
+    if (hit) {
+      if (!blocked(o) && !(o.megaT > 0) && !(o.phaseT > 0) && !o.finished) {
+        o.v.multiplyScalar(0.35); o.slipUntil = simTime + 0.9; o.stungAt = simTime;
+        o.v.addScaledVector(track.arena ? UP : track.S[o.idx].N, 3);
+        netEvent('sting', o);
+        if (!simulating) { stingFx(o); if (o.p.distanceTo(camera.position) < 45) sfx.sting(); if (o.player) { shake = 0.35; toast('Stung by ' + b.owner.def.name + '\'s bee!'); setTimeout(() => toast(''), 1300); } }
+      }
+    }
+    if (hit || b.t > 8 || o.finished || (o.out && b.t > 1)) {
+      if (b.mesh) { if (!hit) emit(b.pos, 10, { color: '#ffd23f', speed: 2, life: 0.4 }); scene.remove(b.mesh); }
+      track.bees.splice(k, 1); continue;
+    }
+    if (b.mesh) {
+      b.mesh.position.copy(b.pos);
+      if (b.vel.lengthSq() > 0.1) b.mesh.lookAt(_t.copy(b.pos).add(b.vel));
+      const flap = Math.sin(performance.now() / 18) * 0.7;
+      b.mesh.userData.wingL.rotation.z = flap; b.mesh.userData.wingR.rotation.z = -flap;
+      if (Math.random() < 0.5) emit(b.pos, 1, { color: '#ffe680', speed: 0.5, life: 0.4, grav: 0 });
+    }
+  }
+}
+function stingFx(o) { ring(o.p, '#ffb81a', 2.4); flareAt(o.p, '#ffe14d', 3.5); emit(o.p, 24, { color: '#ffd23f', speed: 5, life: 0.5, up: 0.6, grav: 0.4 }); }
+// the Magnet tugs you towards the marble ahead until you catch it or it runs out
+function magnetPull(m, s, dt) {
+  m.magT -= dt; const o = m.magTarget;
+  if (!o || o.finished || o.out) { m.magT = 0; return; }
+  const d = _bw.subVectors(o.p, m.p), dist = d.length();
+  if (dist < 1.6) {   // caught them: latch on to the next marble up the order while the magnet lasts
+    const order = raceOrder().filter(q => !q.finished && !q.out), k = order.indexOf(o);
+    m.magTarget = track.arena ? null : order[k - 1]; if (!m.magTarget) m.magT = 0; return;
+  }
+  if (s && s.T) { m.v.addScaledVector(s.T, 15 * dt); const side = d.dot(s.B); m.v.addScaledVector(s.B, clamp(side, -1, 1) * 6 * dt); }
+  else m.v.addScaledVector(d.divideScalar(dist), 14 * dt);
+}
+function magnetFx(m) { ring(m.p, '#ff3d4d', 3); flareAt(m.p, '#ff8a94', 4); emit(m.p, 30, { color: '#ff6b78', speed: 4, life: 0.5, grav: -0.2 }); }
 function useItem(m) {
   const it = m.item; if (!it || m.out || m.finished || simTime < m.itemReadyAt) return;
-  m.item = null; netEvent(it, m);
   const near = m.p.distanceTo(camera.position) < 45;
+  if (it === 'bananas' && m.itemN > 1) {   // peels come off the bunch one at a time
+    m.itemN--; m.itemReadyAt = simTime + 0.35; m.useAt = simTime + 0.6 + Math.random() * 2.5;
+    dropBanana(m); netEvent('banana', m); if (near) sfx.peel(); return;
+  }
+  m.item = null; m.itemN = 0;
+  if (it === 'bee') { const o = beeTarget(m); if (!o) return; launchBee(m, o); netEvent('bee', m, o); if (near) sfx.bee(); return; }
+  netEvent(it === 'bananas' ? 'banana' : it, m);
   if (it === 'rocket') { m.rocketT = 1.8; if (!simulating) rocketFx(m); if (near) sfx.rocket(); if (m.player) { flash('#ff9a3c', 0.25); shake = 0.25; } }
   if (it === 'phase') { m.phaseT = 3.5; if (!simulating) phaseFx(m); if (near) sfx.phase(); }
   if (it === 'shield') { m.shieldT = 8; if (!simulating) shieldFx(m); if (near) sfx.shield(); }
   if (it === 'mega') { m.megaT = 5; if (!simulating) megaFx(m); if (near) sfx.mega(); if (m.player) shake = 0.3; }
-  if (it === 'oil') { dropSlick(m); if (near) sfx.oil(); }
+  if (it === 'banana' || it === 'bananas') { dropBanana(m); if (near) sfx.peel(); }
+  if (it === 'magnet') {
+    const order = raceOrder().filter(o => !o.finished && !o.out), k = order.indexOf(m);
+    m.magTarget = track.arena ? beeTarget(m) : order[k - 1]; m.magT = m.magTarget ? 3 : 0;
+    if (!simulating) magnetFx(m); if (near) sfx.magnet();
+  }
   if (it === 'shock') {
     for (const o of marbles) {
       if (o === m || o.out || o.finished) continue;
@@ -3480,19 +3653,21 @@ function useItem(m) {
 }
 let itemWanted = false, lastRoll = 0;
 function pickupBoxes() {
-  if (track.slicks && track.slicks.length) {
-    for (let k = track.slicks.length - 1; k >= 0; k--) {
-      const sl = track.slicks[k];
-      if (simTime > sl.until) { if (sl.mesh) { scene.remove(sl.mesh); sl.mesh.geometry.dispose(); } track.slicks.splice(k, 1); continue; }
-      for (const o of marbles) {
-        if (o.out || o.finished || o.phaseT > 0 || sl.hit.has(o) || (o === sl.owner && simTime < sl.safe) || o.p.distanceTo(sl.pos) > 1.35) continue;
-        sl.hit.add(o);
-        if (blocked(o) || o.megaT > 0) continue;
+  if (track.peels && track.peels.length) {
+    for (let k = track.peels.length - 1; k >= 0; k--) {
+      const pl = track.peels[k];
+      let gone = simTime > pl.until;
+      if (!gone) for (const o of marbles) {
+        if (o.out || o.finished || o.phaseT > 0 || (o === pl.owner && simTime < pl.safe) || o.p.distanceTo(pl.pos) > 1.05) continue;
+        gone = true;
+        if (blocked(o) || o.megaT > 0) break;
         o.slipUntil = simTime + (track.arena ? 0.9 : 1.3); o.v.multiplyScalar(0.8);
         o.v.x += (Math.random() - 0.5) * 3; o.v.z += (Math.random() - 0.5) * 3;
         netEvent('slip', o);
-        if (!simulating) { emit(sl.pos, 18, { color: '#8d7bff', speed: 4, life: 0.5, up: 0.6 }); if (o.p.distanceTo(camera.position) < 40) sfx.slip(); if (o.player) { toast('Oil slick! Spinning out…'); setTimeout(() => toast(''), 1200); } }
+        if (!simulating) { emit(pl.pos, 18, { color: '#ffd23f', speed: 4, life: 0.5, up: 0.6 }); if (o.p.distanceTo(camera.position) < 40) sfx.slip(); if (o.player) { toast('Banana! Spinning out…'); setTimeout(() => toast(''), 1200); } }
+        break;
       }
+      if (gone) { if (pl.mesh) peelGone(pl.mesh); track.peels.splice(k, 1); }
     }
   }
   for (const b of track.boxes) {
@@ -3519,6 +3694,8 @@ function renderItemSlot(me) {
     slot.style.setProperty('--ic', key ? ITEMS[key].color : 'transparent');
     $('itemName').textContent = key ? ITEMS[key].name : 'No item';
   }
+  const cnt = me.item && me.itemN > 1 && slot.dataset.rolling !== '1' ? '×' + me.itemN : '';
+  if ($('itemCount').textContent !== cnt) $('itemCount').textContent = cnt;
   slot.classList.toggle('has', !!me.item);
 }
 
@@ -3635,6 +3812,7 @@ function update(dt) {
     b.mesh.position.copy(b.pos); b.mesh.position.y += Math.sin(tnow * 2.4 + b.phase) * 0.12;
   }
   if (state === 'race' && !netClient) pickupBoxes();
+  if (state === 'race' || state === 'done') updateBees(dt);
   for (const m of marbles) {
     if (m.rocketT > 0) emit(_t.copy(m.p).addScaledVector(m.v, -0.03), 3, { color: Math.random() < 0.5 ? '#ff7a1a' : '#ffd23f', speed: 1.5, life: 0.4, grav: -0.3, vel: m.v.clone().multiplyScalar(-0.25) });
     if (m.zapT > 0 && Math.random() < 0.4) emit(m.p, 1, { color: '#fff3a0', speed: 2, life: 0.3 });
@@ -3750,7 +3928,8 @@ function update(dt) {
 }
 
 // headless test hook: run a full race with every marble on autopilot
-window.__dbg = { econ, TRACKS, buildTrack, randomCourse, DS, live: () => ({ marbles, track, state, raceTime, chunks: trackChunks }) };
+window.__dbg = { econ, TRACKS, buildTrack, randomCourse, DS, live: () => ({ marbles, track, state, raceTime, chunks: trackChunks, me: marbles[playerIdx] }),
+  items: { dropBanana, launchBee, beeTarget, useItem, raceOrder } };
 window.__simRace = (ti, maxT = 150, seed) => {
   simulating = !window.__asPlayer;
   selTrack = ti; loadTrack(ti);
@@ -3767,7 +3946,7 @@ window.__simRace = (ti, maxT = 150, seed) => {
         if (m.item) useItem(m);
       } m.segT = m.segT || {}; const sg = track.S[m.idx].seg; m.segT[sg] = (m.segT[sg] || 0) + dt; }
     for (let k = 0; k < 4; k++) stepPhysics(SUB);
-    pickupBoxes();
+    pickupBoxes(); updateBees(dt);
     raceTime += dt;
   }
   simulating = false;
