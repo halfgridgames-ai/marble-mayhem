@@ -771,6 +771,10 @@ const CUPS = [
   { id: 'summit', name: 'Summit Cup', diff: 'Hard', dc: 'd-hard', tracks: [4, 2, 6, 1], trophy: { name: 'Summit Star', icon: '⛰️' }, blurb: 'Hairpins, desert freefalls, the sunset coaster and the tower.' },
   { id: 'inferno', name: 'Inferno Cup', diff: 'Hard', dc: 'd-hard', tracks: [11, 16, 21, 2], trophy: { name: 'Blazing Chalice', icon: '🔥' }, blurb: 'Lava slabs, an icy avalanche, the treetop trail and the canyon.' },
   { id: 'galaxy', name: 'Galaxy Cup', diff: 'Hard', dc: 'd-hard', tracks: [12, 20, 25, 24], trophy: { name: 'Comet Crown', icon: '☄️' }, blurb: 'Orbit station, comet chute, pinball palace and thunder run.' },
+  { id: 'toybox', name: 'Toy Box Cup', diff: 'Easy', dc: 'd-easy', tracks: [27, 28, 29, 30], trophy: { name: 'Teddy Trophy', icon: '🧸' }, blurb: 'Toy-block stairs, crayon forests, a toy train set and the bouncy castle.' },
+  { id: 'reef', name: 'Coral Reef Cup', diff: 'Medium', dc: 'd-med', tracks: [31, 32, 33, 34], trophy: { name: 'Pearl Shell', icon: '🐚' }, blurb: 'Kelp flumes, a sunken ship, jellyfish bumpers and the bubble tubes.' },
+  { id: 'haunted', name: 'Haunted Cup', diff: 'Hard', dc: 'd-hard', tracks: [35, 36, 37, 38], trophy: { name: 'Jack-o\'-Lantern', icon: '🎃' }, blurb: 'Graveyard planks, the pumpkin patch, a spooky mansion and the witch\'s vortex.' },
+  { id: 'cloud', name: 'Cloud Kingdom Cup', diff: 'Hard', dc: 'd-hard', tracks: [39, 40, 41, 42], trophy: { name: 'Rainbow Crown', icon: '🌈' }, blurb: 'A rainbow bridge, the sky castle, island leaps and a thunderhead spiral.' },
   { id: 'chaos', name: 'Chaos Cup', diff: 'Surprise', dc: 'd-rand', tracks: [7, 7, 7, 7], trophy: { name: 'Chaos Cube', icon: '🎲' }, blurb: 'Four random courses nobody has seen before.' },
 ];
 const CUP_PRIZE = [400, 250, 150];
@@ -962,12 +966,96 @@ const TRACKS = [
     palette: ['#62c4f2', '#6abf69', '#ffd166', '#3aa0e8'],
     segs: [...START(), ...SNAKE(4), WIDE(2.6), { len: 32, slope: -0.17, slalom: 4.5 }, WAVES(40, 0.16), ...BOWL(-1), CHUTE(14, -0.2, { boost: true }),
       ...SNAKE(3, 20), ...JUMP(6), WIDE(3), { len: 26, slope: -0.15, pops: 5 }, CURVE(1.5, 28), ...FINISH(1)] },
+  // ---- Toy Box Cup (Easy) ----
+  { id: 'blockbay', name: 'Building Block Bay', diff: 'Easy', dc: 'd-easy', seed: 401, theme: 'toybox',
+    blurb: 'Hop down giant toy-block stairs, swing round a play-mat bowl and dodge bouncing toy balls.',
+    palette: ['#ff4d4d', '#ffc531', '#3aa0ff', '#4fe07a'],
+    segs: [...START(), CURVE(1.4, 26), ...STAIRS(4, 0.85), ...BOWL(-1), WIDE(3), { len: 28, slope: -0.15, pops: 5 }, ...SNAKE(3),
+      CHUTE(14, -0.22, { boost: true }), ...JUMP(6), WIDE(2.6), { len: 30, slope: -0.16, slalom: 4.6 }, ...STAIRS(3, 0.8), CURVE(-1.5, 28), ...FINISH(1)] },
+  { id: 'crayon', name: 'Crayon Canyon', diff: 'Easy', dc: 'd-easy', seed: 409, theme: 'toybox',
+    blurb: 'Weave through a forest of giant crayons, ride the rainbow waves and leap the paint pots.',
+    palette: ['#b45cff', '#ff8a3c', '#4fe07a', '#3aa0ff'],
+    segs: [...START(), ...SNAKE(4), WIDE(2.6), { len: 34, slope: -0.17, slalom: 4.4 }, WAVES(40, 0.16), CURVE(-1.6, 28), ...JUMP(6),
+      WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...SNAKE(3, 18), WIDE(3), { len: 26, slope: -0.15, pops: 5 }, ...JUMP(7), ...FINISH(-1)] },
+  { id: 'trainset', name: 'Train Set Twist', diff: 'Easy', dc: 'd-easy', seed: 419, theme: 'toybox',
+    blurb: 'A toy railway: a spiral track tower, split lines with boost pads and a tunnel through the toy box.',
+    palette: ['#3aa0ff', '#ff4d4d', '#ffc531', '#2fbf8a'],
+    segs: [...START(), CURVE(1.5, 28), ...HELIX(1, 1), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, TUBE(36, { turn: -1.4, bank: 0.3 }),
+      WAVES(34, 0.14), ...BOWL(1), WIDE(3), { len: 28, slope: -0.14, sliders: 2 }, CURVE(-1.6, 28), ...JUMP(6), ...FINISH(1)] },
+  { id: 'bouncycastle', name: 'Bouncy Castle', diff: 'Easy', dc: 'd-easy', seed: 431, theme: 'toybox',
+    blurb: 'Boing! Bumper fields, bouncy waves, two big bowls and a jump over the castle moat.',
+    palette: ['#ff6fb5', '#ffc531', '#4fb4ff', '#7ed957'],
+    segs: [...START(), WIDE(3.2), { len: 30, slope: -0.14, bumpers: 6 }, WAVES(40, 0.2), ...BOWL(-1), CURVE(1.5, 26), WIDE(3), { len: 30, slope: -0.14, bumpers: 7 },
+      ...JUMP(7), ...BOWL(1, 1.2), ...SNAKE(3), WAVES(30, 0.18), ...FINISH(-1)] },
+  // ---- Coral Reef Cup (Medium) ----
+  { id: 'kelpflume', name: 'Kelp Forest Flume', diff: 'Medium', dc: 'd-med', seed: 443, theme: 'reef',
+    blurb: 'Slalom through swaying kelp, squelch across the seaweed beds and shoot the glass flumes.',
+    palette: ['#3fd0c8', '#ff7aa0', '#2fa07a', '#ffb347'],
+    segs: [...START(), ...SNAKE(3), WIDE(2.6), { len: 34, slope: -0.17, slalom: 4.2 }, TUBE(40, { turn: 1.6, bank: 0.3 }), ...MUD(26), CURVE(-1.6, 28),
+      ...CORKTUBE(1, 1), WIDE(3), { len: 28, slope: -0.14, sliders: 3 }, ...JUMP(8), WIDE(2.6), { len: 30, slope: -0.17, slalom: 4.2 }, ...FINISH(1)] },
+  { id: 'sunkenship', name: 'Sunken Ship', diff: 'Medium', dc: 'd-med', seed: 457, theme: 'reef',
+    blurb: 'Drop through the hold of a wreck: swinging masts, sliding cargo, the stairs below deck and a plank walk.',
+    palette: ['#8a5a3a', '#3fd0c8', '#c98a4a', '#2a7f9a'],
+    segs: [...START(), CURVE(-1.4, 26), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.4 }, ...STAIRS(4, 0.9), WIDE(3), { len: 30, slope: -0.13, sliders: 3 },
+      ...FREEFALL(), CURVE(1.6, 28), ...TIGHTROPE(26, 0.4), WIDE(3.2), { len: 22, slope: -0.12, sweeper: -2.6 }, ...JUMP(8), ...FINISH(-1)] },
+  { id: 'jellyfish', name: 'Jellyfish Jive', diff: 'Medium', dc: 'd-med', seed: 467, theme: 'reef',
+    blurb: 'Bounce off jellyfish bumpers, ride the ocean swell and duck the popping anemones.',
+    palette: ['#ff7aa0', '#b05cff', '#3fe0c8', '#ffd84d'],
+    segs: [...START(), WIDE(3.4), { len: 32, slope: -0.14, bumpers: 8 }, WAVES(42, 0.2), CURVE(1.5, 28), WIDE(3), { len: 28, slope: -0.15, pops: 4.6 },
+      ...BOWL(-1, 1.2), WIDE(3.4), { len: 30, slope: -0.14, bumpers: 8 }, ...JUMP(8), WAVES(34, 0.2), WIDE(3), { len: 26, slope: -0.15, pops: 4.6 }, ...FINISH(1)] },
+  { id: 'bubbletube', name: 'Bubble Tube Express', diff: 'Medium', dc: 'd-med', seed: 479, theme: 'reef',
+    blurb: 'A rush through corkscrew glass tubes, a whirlpool vortex and boost currents to the finish.',
+    palette: ['#4fb4ff', '#3fe0c8', '#7a6bff', '#ff7aa0'],
+    segs: [...START(), ...CORKTUBE(-1, 1.25), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...SNAKE(3), ...VORTEX(1), CURVE(-1.4, 26),
+      TUBE(40, { turn: 1.5, bank: 0.3 }), WIDE(3.2), { len: 30, slope: -0.13, spinners: 2 }, CHUTE(14, -0.22, { boost: true }), ...FINISH(-1)] },
+  // ---- Haunted Cup (Hard) ----
+  { id: 'graveyard', name: 'Graveyard Gallop', diff: 'Hard', dc: 'd-hard', seed: 491, theme: 'haunted',
+    blurb: 'Creaky planks over open graves, the reaper\'s swinging scythe and crypt gates that slam shut.',
+    palette: ['#6a3a9a', '#ff8a1e', '#4a2a6a', '#8a5ab8'],
+    segs: [...START(), CURVE(1.5, 26), ...TIGHTROPE(28, 0.5), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.8 }, WIDE(3), { len: 30, slope: -0.15, gates: 6.5 },
+      HAIRPIN(-1), ...OPEN(30, { pegs: 5.5 }), ...JUMP(9, 0.14), WIDE(3.2), { len: 22, slope: -0.12, sweeper: -3 }, ...BOTTLENECK(), ...FINISH(1)] },
+  { id: 'pumpkinpatch', name: 'Pumpkin Patch Panic', diff: 'Hard', dc: 'd-hard', seed: 503, theme: 'haunted',
+    blurb: 'Pumpkins pop up everywhere, sticky bog, rolling gourds and two jumps over the patch.',
+    palette: ['#ff8a1e', '#5a3a7a', '#ffb347', '#3a2a4a'],
+    segs: [...START(), WIDE(3), { len: 30, slope: -0.15, pops: 4.2 }, ...MUD(26), CURVE(-1.6, 28), WIDE(3), { len: 30, slope: -0.13, sliders: 4 }, ...JUMP(10, 0.15),
+      ...SNAKE(4, 16), WIDE(3), { len: 28, slope: -0.15, pops: 4.2 }, ...OPEN(28, { sliders: 2 }), ...JUMP(9, 0.14), ...FINISH(-1)] },
+  { id: 'mansion', name: 'Spooky Mansion', diff: 'Hard', dc: 'd-hard', seed: 517, theme: 'haunted',
+    blurb: 'Tumble down the grand staircase, through a trapdoor, past spinning chandeliers and out the narrow hall.',
+    palette: ['#8a5ab8', '#2a1e3a', '#c98aff', '#5a4a6a'],
+    segs: [...START(), ...STAIRS(5, 0.9), WIDE(3.2), { len: 32, slope: -0.13, spinners: 3 }, ...FREEFALL(), ...BOTTLENECK(), CURVE(1.7, 28), ...TIGHTROPE(30, -0.4),
+      ...STAIRS(4, 0.95), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...FREEFALL(), ...FINISH(1)] },
+  { id: 'witchvortex', name: 'Witch\'s Vortex', diff: 'Hard', dc: 'd-hard', seed: 529, theme: 'haunted',
+    blurb: 'Hairpins down the haunted hill, a wall-less broomstick run and the witch\'s three-ring vortex.',
+    palette: ['#4fe07a', '#6a3a9a', '#9dff6a', '#2a1e3a'],
+    segs: [...START(), HAIRPIN(1), HAIRPIN(-1), ...OPEN(32, { turn: 0.6 }), ...JUMP(10, 0.15), ...VORTEX(-1), WIDE(3.2), { len: 30, slope: -0.13, spinners: 3 },
+      ...TIGHTROPE(26, 0.5), HAIRPIN(1), ...JUMP(9, 0.14), ...FINISH(-1)] },
+  // ---- Cloud Kingdom Cup (Hard) ----
+  { id: 'rainbowbridge', name: 'Rainbow Bridge', diff: 'Hard', dc: 'd-hard', seed: 541, theme: 'cloudland',
+    blurb: 'Ride a wall-less rainbow across the sky, hop between cloud islands and thread the narrow arch.',
+    palette: ['#ff5a5a', '#ffd84d', '#4fb4ff', '#8a6bff'],
+    segs: [...START(), CURVE(1.4, 26), ...OPEN(34, { turn: 0.8 }), ...JUMP(10, 0.15), ...TIGHTROPE(30, -0.5), WAVES(36, 0.18), ...JUMP(11, 0.16, 3),
+      ...OPEN(30, { pegs: 6 }), ...BOTTLENECK(), CURVE(-1.5, 28), ...FINISH(1)] },
+  { id: 'cloudcastle', name: 'Castle in the Clouds', diff: 'Hard', dc: 'd-hard', seed: 553, theme: 'cloudland',
+    blurb: 'Storm the sky castle: drawbridge gates, the tower spiral, swinging banners and the royal bowl.',
+    palette: ['#ffb3d9', '#b3d1ff', '#fff0a8', '#c9b3ff'],
+    segs: [...START(), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...HELIX(2, -1), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.6 }, ...BOWL(1, 1.3),
+      ...TIGHTROPE(28, 0.4), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...JUMP(9, 0.14), WIDE(3.2), { len: 22, slope: -0.12, sweeper: -2.8 }, ...FINISH(-1)] },
+  { id: 'islandhop', name: 'Sky Island Hop', diff: 'Hard', dc: 'd-hard', seed: 563, theme: 'cloudland',
+    blurb: 'Five big leaps between floating islands, a freefall through the clouds and a sliding cloud lane.',
+    palette: ['#7ed957', '#ffb3d9', '#4fb4ff', '#ffd84d'],
+    segs: [...START(), CURVE(-1.3, 24), ...JUMP(10, 0.15), ...JUMP(11, 0.16, 3), CURVE(1.6, 28), ...FREEFALL(), WIDE(3), { len: 28, slope: -0.13, sliders: 3 },
+      ...JUMP(10, 0.15), ...SNAKE(3), ...JUMP(12, 0.16, 3), ...OPEN(28), ...JUMP(9, 0.14), ...FINISH(1)] },
+  { id: 'thunderhead', name: 'Thunderhead Spiral', diff: 'Hard', dc: 'd-hard', seed: 577, theme: 'cloudland',
+    blurb: 'Spin down a storm cloud: a double helix, lightning spinners, the vortex and a final rainbow dash.',
+    palette: ['#8a6bff', '#4fb4ff', '#ffd84d', '#ff6fb5'],
+    segs: [...START(), ...HELIX(2, 1), WIDE(3.2), { len: 32, slope: -0.13, spinners: 3 }, ...JUMP(10, 0.15), ...VORTEX(-1), WIDE(3), { len: 30, slope: -0.13, sliders: 3 },
+      ...TIGHTROPE(26, 0.5), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...JUMP(9, 0.14), ...FINISH(-1)] },
 ];
 
 // builds a fresh downhill course from random building blocks
 const PALETTES = [['#e8a33c', '#d9762b', '#f0c66b', '#c95f2a'], ['#3aa0e8', '#2c6fd1', '#62c4f2', '#4b55c9'], ['#d0604a', '#a8473a', '#e48a5e', '#8c3b4a'],
   ['#6abf69', '#3f9b5a', '#a3d977', '#2f7d6d'], ['#ff5fa2', '#7b5cff', '#ffb02e', '#2ec4b6'], ['#bfe9ff', '#8fd0f5', '#e4f6ff', '#9fb8ff']];
-const RANDOM_THEMES = ['forest', 'alpine', 'desert', 'snow', 'neon', 'sunset', 'volcano', 'candy', 'space', 'jungle', 'beach'];
+const RANDOM_THEMES = ['forest', 'alpine', 'desert', 'snow', 'neon', 'sunset', 'volcano', 'candy', 'space', 'jungle', 'beach', 'toybox', 'haunted', 'reef', 'cloudland'];
 function randomCourse(seed) {
   const r = rng(seed), pick = a => a[Math.floor(r() * a.length)];
   const segs = START();
@@ -2507,7 +2595,8 @@ function cupTrophyHtml(c) {
 }
 const THEME_ART = { forest: ['🌲', '#3fbf6a', '#1d6b3e'], alpine: ['🏔️', '#8fc6ff', '#3a64b8'], beach: ['🏖️', '#ffe08a', '#2bb3c8'], candy: ['🍭', '#ff9ad5', '#b15cff'],
   dark: ['🦇', '#5a4a8a', '#140f2a'], desert: ['🏜️', '#ffc27a', '#d1602d'], jungle: ['🌴', '#7ed957', '#1f7a4a'], neon: ['🕹️', '#ff4fd8', '#3a1a9a'], snow: ['❄️', '#e6f6ff', '#6aa8e0'],
-  space: ['🪐', '#6a5cff', '#120c3a'], sunset: ['🌅', '#ffb347', '#e0457b'], volcano: ['🌋', '#ff7a2f', '#6b1010'] };
+  space: ['🪐', '#6a5cff', '#120c3a'], sunset: ['🌅', '#ffb347', '#e0457b'], volcano: ['🌋', '#ff7a2f', '#6b1010'],
+  toybox: ['🧸', '#ffd84d', '#ff6b6b'], haunted: ['🎃', '#7a3aaa', '#1a0f2e'], reef: ['🐠', '#3fe0c8', '#0a5f86'], cloudland: ['🏰', '#ffd6f0', '#8ab8ff'] };
 const trackArt = t => t.random ? ['🎲', '#9a8cff', '#4b33b8'] : t.arena ? ['🌀', '#ff5fb0', '#5b2bd1'] : THEME_ART[t.theme] || ['🏁', '#6a7bd8', '#2a3470'];
 let diffFilter = store.get('diffFilter') || 'All';
 function trackLength(def) { return def.arena ? '' : def.random ? '~950 m' : Math.round(def.segs.reduce((a, s) => a + s.len, 0)) + ' m'; }
