@@ -52,6 +52,34 @@ h1 .subtitle { display: block; font-size: 0.4em; color: #ff9a3c; text-shadow: 0 
 .track .nm { font-family: var(--display); font-size: 21px; }
 .track .meta { font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 .track .blurb { font-size: 13px; color: var(--ink); opacity: 0.85; }
+/* course cards: a themed art tile beside the name */
+.track.arty { flex-direction: row; align-items: flex-start; gap: 12px; padding: 10px 12px 10px 10px; }
+.track .art { flex: none; width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(150deg, var(--a1), var(--a2)); display: grid; place-items: center; font-size: 30px; position: relative; overflow: hidden;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.22), inset 0 3px 0 rgba(255,255,255,0.28); text-shadow: 0 3px 4px rgba(0,0,0,0.3); }
+.track .art::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(255,255,255,0.09) 0 6px, transparent 6px 14px); }
+.track .info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.track.arty .nm { font-size: 19px; line-height: 1.1; }
+.track.arty[aria-pressed="true"] .art { box-shadow: inset 0 -4px 0 rgba(0,0,0,0.22), 0 0 0 3px var(--gold); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+.chips button { background: rgba(255,255,255,0.06); border: 2px solid transparent; color: var(--ink); border-radius: 99px; padding: 5px 12px; font-weight: 800; font-size: 13px; }
+.chips button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); background: rgba(255,197,49,0.12); }
+@media (max-width: 640px) {
+  .tracks:not(#cupList) { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .track.arty { flex-direction: column; padding: 8px; gap: 6px; }
+  .track.arty .art { width: 100%; height: 58px; }
+  .track.arty .blurb { display: none; }
+  .track.arty[aria-pressed="true"], .track.arty.wide { grid-column: 1 / -1; flex-direction: row; }
+  .track.arty[aria-pressed="true"] .art, .track.arty.wide .art { width: 64px; height: 64px; }
+  .track.arty[aria-pressed="true"] .blurb { display: block; }
+}
+/* the Race button stays on screen at the bottom of the menu */
+.gobar { position: sticky; bottom: -22px; margin: 18px -22px -22px; padding: 14px 22px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 12px; align-items: center; z-index: 3;
+  background: linear-gradient(180deg, rgba(20,28,58,0), var(--panel-solid) 26%); border-radius: 0 0 22px 22px; }
+.gobar .mine { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; background: rgba(255,255,255,0.07); border: 2px solid var(--line); border-radius: 14px; padding: 7px 12px; color: var(--ink); font-weight: 800; font-size: 15px; text-align: left; }
+.gobar .mine .dot { width: 32px; height: 32px; flex: none; margin: 0; }
+.gobar .mine span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gobar .mine small { display: block; font-size: 10px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.12em; }
+.gobar .go { flex: none; padding: 12px 30px; }
 .diff { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 6px; }
 .d-surv { background: #c4307a; } .standings .out { opacity: 0.4; text-decoration: line-through; } .d-easy { background: #2e7d5b; } .d-med { background: #b0751a; } .d-hard { background: #a8324a; } .d-rand { background: #5b4bc4; }
 .marbles { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
@@ -68,6 +96,10 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 #hud { position: absolute; inset: 0; pointer-events: none; }
 .hud-pos { position: absolute; left: 16px; top: calc(14px + env(safe-area-inset-top, 0px)); font-family: var(--display); font-size: clamp(40px, 9vw, 64px); line-height: 1; color: var(--ink); text-shadow: 0 3px 0 rgba(0,0,0,0.35); }
 .hud-pos small { font-size: 0.42em; color: var(--ink-dim); }
+.hud-pos.up { animation: posup .7s ease-out; } .hud-pos.down { animation: posdown .7s ease-out; }
+@keyframes posup { 0% { transform: scale(1.35); color: var(--mint); text-shadow: 0 0 16px var(--mint); } 100% { transform: scale(1); } }
+@keyframes posdown { 0% { transform: scale(0.85); color: var(--danger); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .hud-pos.up, .hud-pos.down { animation: none; } }
 .hud-time { position: absolute; left: 50%; transform: translateX(-50%); top: calc(14px + env(safe-area-inset-top, 0px)); background: var(--panel); border-radius: 12px; padding: 6px 14px; font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
 .hud-speed { position: absolute; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--panel); border-radius: 12px; padding: 6px 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .hud-speed span { font-size: 22px; }
@@ -523,6 +555,7 @@ HGSplash.show();
       </div>
       <div class="label big" id="listLabel">Pick a course</div>
       <p class="modehelp" id="modeHelp"></p>
+      <div class="chips" id="diffChips" role="group" aria-label="Filter courses"></div>
       <div class="cabinet" id="cabinet" hidden></div>
       <div class="tracks" id="trackList"></div>
       <div class="board" id="trackBoard" hidden></div>
@@ -549,13 +582,13 @@ HGSplash.show();
       <p class="msg" id="menuTrial" role="status"></p>
       <div class="marbles" id="marbleList"></div>
       <div class="row">
-        <button class="go" id="btnGo">Race!</button>
         <button class="ghost" id="btnShop">Shop</button>
         <button class="ghost small" id="mMusic">Music on</button>
         <button class="ghost small" id="mSound">Sound on</button>
         <button class="ghost small" id="btnSettings">Settings</button>
         <div class="keys">Steer <kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · nudge <kbd>↑</kbd> · brake <kbd>↓</kbd> · camera <kbd>C</kbd><br>bump <kbd>Space</kbd> · use item <kbd>E</kbd> · music <kbd>M</kbd><br>Item boxes come in rows across the track, and bonus ones float over the rim of fast bends and high above jumps. Leaders get defensive items, marbles at the back get the big ones. Hold nudge while using a banana to throw it ahead instead of dropping it. On a phone, use the joystick and the buttons on the left.</div>
       </div>
+      <div class="gobar"><button class="mine" id="goMine" aria-label="Change marble"></button><button class="go" id="btnGo">Race!</button></div>
     </div>
   </div>
 
@@ -1753,7 +1786,7 @@ function createMarbles(netSetup) {
     pstats = { steer: 1, push: 1, bump: 1, magnet: 1, coinMul: 1 };
   }
   for (const c of track.coins) { c.taken = false; c.mesh.visible = true; }
-  raceCoins = 0; hitCoins = 0; hitsLanded = 0; missionsDone = []; hudPlace = 0;
+  raceCoins = 0; hitCoins = 0; hitsLanded = 0; missionsDone = []; hudPlace = 0; hudShown = 0;
   roster.forEach((def, i) => {
     const [idx, x] = slots[i];
     const s = track.arena ? arenaSlot(slots[i], i) : track.S[idx];
@@ -2428,6 +2461,11 @@ function cupTrophyHtml(c) {
   const tr = store.get('trophy-' + c.id);
   return `<div class="tr${tr ? ' t' + tr : ''}" title="${c.trophy.name}"><span class="cup">${c.trophy.icon}</span><b>${c.trophy.name}</b>${tr ? ['Gold', 'Silver', 'Bronze'][tr - 1] : 'Not won yet'}</div>`;
 }
+const THEME_ART = { forest: ['🌲', '#3fbf6a', '#1d6b3e'], alpine: ['🏔️', '#8fc6ff', '#3a64b8'], beach: ['🏖️', '#ffe08a', '#2bb3c8'], candy: ['🍭', '#ff9ad5', '#b15cff'],
+  dark: ['🦇', '#5a4a8a', '#140f2a'], desert: ['🏜️', '#ffc27a', '#d1602d'], jungle: ['🌴', '#7ed957', '#1f7a4a'], neon: ['🕹️', '#ff4fd8', '#3a1a9a'], snow: ['❄️', '#e6f6ff', '#6aa8e0'],
+  space: ['🪐', '#6a5cff', '#120c3a'], sunset: ['🌅', '#ffb347', '#e0457b'], volcano: ['🌋', '#ff7a2f', '#6b1010'] };
+const trackArt = t => t.random ? ['🎲', '#9a8cff', '#4b33b8'] : t.arena ? ['🌀', '#ff5fb0', '#5b2bd1'] : THEME_ART[t.theme] || ['🏁', '#6a7bd8', '#2a3470'];
+let diffFilter = store.get('diffFilter') || 'All';
 function trackLength(def) { return def.arena ? '' : def.random ? '~950 m' : Math.round(def.segs.reduce((a, s) => a + s.len, 0)) + ' m'; }
 function renderMenu() {
   if (trial && trial.used && state === 'menu') { endTrial(); finishOrder = []; createMarbles(); }
@@ -2455,22 +2493,29 @@ function renderMenu() {
       <span class="blurb">${c.blurb}</span></button>`;
   }).join('');
   syncAudioButtons();
+  const chips = !$('trackList').hidden && !surv && !(online && net && net.role !== 'host');
+  $('diffChips').hidden = !chips;
+  $('diffChips').innerHTML = ['All', 'Easy', 'Medium', 'Hard', 'Surprise'].map(d => `<button data-diff="${d}" aria-pressed="${d === diffFilter}">${d}</button>`).join('');
   const order = TRACKS.map((t, i) => i).sort((a, b) => (TRACKS[a].random ? 1 : 0) - (TRACKS[b].random ? 1 : 0) || (DIFF_ORDER[TRACKS[a].diff] - DIFF_ORDER[TRACKS[b].diff]) || a - b);
   $('trackList').innerHTML = order.map(i => {
     const t = TRACKS[i];
     if (mode === 'single' ? t.arena : surv && !t.arena) return '';
-    const best = store.get('best-' + t.id), pl = store.get('place-' + t.id);
-    return `<button class="track${t.random || surv ? ' wide' : ''}" data-i="${i}" aria-pressed="${i === selTrack}"><span class="nm">${pl && pl <= 3 ? `<span class="medal">${MEDAL[pl]}</span> ` : ''}${t.name}</span>
+    if (chips && diffFilter !== 'All' && t.diff !== diffFilter && i !== selTrack) return '';
+    const best = store.get('best-' + t.id), pl = store.get('place-' + t.id), a = trackArt(t);
+    return `<button class="track arty${t.random || surv ? ' wide' : ''}" data-i="${i}" aria-pressed="${i === selTrack}"><span class="art" style="--a1:${a[1]};--a2:${a[2]}" aria-hidden="true">${a[0]}</span><span class="info"><span class="nm">${pl && pl <= 3 ? `<span class="medal">${MEDAL[pl]}</span> ` : ''}${t.name}</span>
       <span class="meta"><span class="diff ${t.dc}">${t.diff}</span>${trackLength(t)}${best ? `${t.arena ? '' : ' · '}<span class="best">${t.arena ? 'longest' : 'best'} ${fmt(best)}</span>` : ''}</span>
-      <span class="blurb">${t.blurb}</span></button>`;
+      <span class="blurb">${t.blurb}</span></span></button>`;
   }).join('');
   const mine = ALL_MARBLES.filter(owns).sort((a, b) => RANK[b.rarity || 'common'] - RANK[a.rarity || 'common']);
   if (trial) mine.unshift(findMarble(selMarble));
   $('marbleList').innerHTML = mine.map(m => `<button class="mb${m.rarity ? ' special' : ''}" data-id="${m.id}" aria-pressed="${m.id === selMarble}" ${m.rarity ? `style="--rc:${RARITY[m.rarity].color}"` : ''}>${dotHtml(m)}${m.name}</button>`).join('')
     + `<button class="mb shoptile" data-shop="1"><span class="dot plus">+</span>Shop</button>`;
   $('menuWallet').innerHTML = coinHtml(econ.coins);
+  { const m = findMarble(selMarble); $('goMine').innerHTML = `${dotHtml(m)}<span><small>Your marble</small>${m.name}</span>`; }
   renderMissions();
 }
+$('diffChips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; sfx.init(); sfx.ui(); diffFilter = b.dataset.diff; store.set('diffFilter', diffFilter); renderMenu(); });
+$('goMine').addEventListener('click', () => { sfx.init(); sfx.ui(); $('marbleList').scrollIntoView({ behavior: calmMotion ? 'auto' : 'smooth', block: 'center' }); });
 $('cupList').addEventListener('click', e => {
   const b = e.target.closest('.track'); if (!b) return;
   sfx.init(); sfx.ui(); selCup = +b.dataset.cup; renderMenu(); loadTrack(CUPS[selCup].tracks[0]);
@@ -2567,7 +2612,7 @@ function onPlayerFinish() {
   if (gp) mission('gp'); if ((gp ? gp.cup.diff : track.src.diff) === 'Hard') mission('hard'); if (me.newBest && !track.def.randomFrom) mission('best');
   state = 'done'; resultsShownAt = raceTime + (place <= 3 ? 3 : 2.2);   // podium finishes get longer to celebrate
 }
-let lastResultsRender = 0, hudPlace = 0;
+let lastResultsRender = 0, hudPlace = 0, hudShown = 0;
 function fullOrder() { return finishOrder.concat(marbles.filter(m => !m.finished).sort((a, b) => b.idx - a.idx)); }
 function gpTable(extra) {
   const pts = {}; for (const m of marbles) pts[m.def.id] = (gp.points[m.def.id] || 0) + (extra ? extra[m.def.id] || 0 : 0);
@@ -4329,7 +4374,11 @@ function update(dt) {
     const place = order.indexOf(me) + 1;
     if (state === 'race' && !track.arena && !me.finished) { if (me.out) hudPlace = 0; else { if (hudPlace && place < hudPlace) mission('pass', hudPlace - place); hudPlace = place; } }
     if (track.arena) $('hPos').innerHTML = `${marbles.filter(m => !m.elim).length}<small> left</small>`;
-    else $('hPos').innerHTML = `${place}<small>${ordinal(place).slice(-2)} / 8</small>`;
+    else if (place !== hudShown) {
+      const el = $('hPos'); el.innerHTML = `${place}<small>${ordinal(place).slice(-2)} / 8</small>`;
+      if (state === 'race' && hudShown) { el.classList.remove('up', 'down'); void el.offsetWidth; el.classList.add(place < hudShown ? 'up' : 'down'); }
+      hudShown = place;
+    }
     $('hTime').textContent = fmt(me.finished ? me.finishTime : raceTime);
     $('hCoins').textContent = raceCoins + hitCoins;
     $('hSpeed').textContent = Math.round(me.v.length() * 3.6 * 1.6);
