@@ -235,6 +235,17 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 .players li i { width: 16px; height: 16px; border-radius: 50%; }
 .players li.me { color: var(--gold); }
 #daily, #adOverlay { background: rgba(8,12,30,0.62); z-index: 30; }
+#settings { background: rgba(8,12,30,0.62); z-index: 30; }
+.card.narrow { width: min(440px, 100%); }
+.setlist { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.setlist .ghost { text-align: left; display: flex; align-items: center; gap: 12px; }
+.setlist .ghost .ic { width: 22px; text-align: center; font-size: 18px; }
+.setlist .ghost.rate { border-color: var(--gold); color: var(--gold); }
+.foot { margin-top: 18px; font-size: 12px; color: var(--ink-dim); text-align: center; }
+.rateask { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; padding: 12px 14px; border: 1px solid var(--gold); border-radius: 14px; background: rgba(255,197,49,0.08); }
+.rateask > span { flex: 1 1 100%; font-weight: 800; }
+.rateask #rRateYes { border-color: var(--gold); color: var(--gold); }
+.rateask .stars { color: var(--gold); letter-spacing: 2px; }
 @media (max-width: 560px) { .days div { font-size: 11px; padding: 6px 0; } }
 .adbar { height: 10px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; margin: 14px 0; }
 .adbar i { display: block; height: 100%; width: 0; background: var(--gold); }
@@ -485,6 +496,7 @@ HGSplash.show();
         <button class="ghost" id="btnShop">Shop</button>
         <button class="ghost small" id="mMusic">Music on</button>
         <button class="ghost small" id="mSound">Sound on</button>
+        <button class="ghost small" id="btnSettings">Settings</button>
         <div class="keys">Steer <kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · nudge <kbd>↑</kbd> · brake <kbd>↓</kbd> · camera <kbd>C</kbd><br>bump <kbd>Space</kbd> · use item <kbd>E</kbd> · music <kbd>M</kbd><br>Item boxes float over the outer rim of fast bends and high above jumps. On a phone, use the joystick and the buttons on the left.</div>
       </div>
     </div>
@@ -534,6 +546,21 @@ HGSplash.show();
     </div>
   </div>
 
+  <div class="overlay" id="settings" hidden>
+    <div class="card narrow">
+      <h1>Settings</h1>
+      <div class="setlist">
+        <button class="ghost rate" id="sRate"><span class="ic" aria-hidden="true">★</span>Rate Marble Mayhem</button>
+        <button class="ghost" id="sAds" hidden><span class="ic" aria-hidden="true">🛡</span>Ad privacy choices</button>
+        <button class="ghost" id="sPrivacy"><span class="ic" aria-hidden="true">🔒</span>Privacy policy</button>
+        <button class="ghost" id="sTerms"><span class="ic" aria-hidden="true">📄</span>Terms of service</button>
+        <button class="ghost" id="sContact"><span class="ic" aria-hidden="true">✉</span>Contact us</button>
+      </div>
+      <div class="row"><button class="go" id="sBack">Back</button></div>
+      <p class="foot">Marble Mayhem: Downhill Dash · Half Grid Games</p>
+    </div>
+  </div>
+
   <div class="overlay" id="podium" hidden>
     <div class="card results">
       <h1 id="pTitle"></h1>
@@ -550,6 +577,7 @@ HGSplash.show();
       <h1 id="rTitle">Finished!</h1>
       <p class="tag" id="rSub"></p>
       <div class="earn" id="rEarn"></div>
+      <div class="rateask" id="rRate" hidden><span>Enjoying Marble Mayhem? <span class="stars">★★★★★</span></span><button class="ghost small" id="rRateYes">Rate it</button><button class="ghost small" id="rRateNo">Not now</button></div>
       <ol id="rList"></ol>
       <div class="board" id="rBoard" hidden></div>
       <div id="rCup" hidden><div class="label" id="rCupTitle"></div><ol id="rCupList" class="cupl"></ol></div>
@@ -1956,6 +1984,7 @@ function arenaPlayerDone() {
   const total = Math.round(lines.reduce((a, l) => a + l[1], 0) * mul);
   econ.coins += total; econ.save();
   me.payout = { lines, mul, total };
+  me.askRate = rating.shouldAsk(place);
   state = 'done'; resultsShownAt = raceTime + 2.2;
 }
 function buildArenaScene(tr) {
@@ -2280,6 +2309,7 @@ function onPlayerFinish() {
   const total = Math.round(lines.reduce((a, l) => a + l[1], 0) * mul);
   econ.coins += total; econ.save();
   me.payout = { lines, mul, total };
+  me.askRate = rating.shouldAsk(place);
   state = 'done'; resultsShownAt = raceTime + 2.2;
 }
 let lastResultsRender = 0;
@@ -2299,7 +2329,7 @@ function renderResults() {
   $('rTitle').textContent = place === 1 ? 'Winner!' : `${ordinal(place)} place`;
   $('btnAgain').textContent = gp ? (gp.race < 3 ? `Next race (${gp.race + 2} of 4)` : 'Cup podium') : 'Race again';
   $('btnMenu').textContent = gp ? 'Quit cup' : 'Change course';
-  $('rCup').hidden = !gp; $('btnShop2').hidden = !!gp || !!net;
+  $('rCup').hidden = !gp; $('btnShop2').hidden = !!gp || !!net; $('rRate').hidden = !me.askRate;
   if (net) { $('btnAgain').textContent = 'Back to room'; $('btnMenu').textContent = 'Leave room'; }
   if (gp) {
     const add = {}; fullOrder().forEach((m, k) => { add[m.def.id] = gp.scored === gp.race ? 0 : GP_POINTS[k]; });
@@ -2942,6 +2972,39 @@ $('results').addEventListener('click', async e => {
   if (await money.showRewarded()) { me.payout.doubled = true; econ.coins += me.payout.total; econ.save(); sfx.coin && sfx.coin(); }
   lastResultsRender = -1;
 });
+// ---------- settings: rate, ad privacy, privacy policy, terms ----------
+// Links open outside the game: in the Android app Capacitor hands non-app URLs to the system,
+// so the Play link opens the Play Store app and the policy pages open in the browser.
+const LINKS = {
+  play: 'https://play.google.com/store/apps/details?id=com.halfgridgames.marblemayhem',
+  privacy: 'https://halfgridgames-ai.github.io/marble-mayhem/privacy.html',
+  terms: 'https://halfgridgames-ai.github.io/marble-mayhem/terms.html',
+  contact: 'mailto:halfgridgames@gmail.com?subject=Marble%20Mayhem',
+};
+function openLink(url) { if (money.native) location.href = url; else window.open(url, '_blank', 'noopener'); }
+// a one-time, skippable "rate us" strip on the results screen: after a few races, on a podium finish, never online
+const rating = {
+  shouldAsk(place) {
+    const n = (store.get('finishes') || 0) + 1; store.set('finishes', n);
+    if (net || store.get('rate-asked') || n < 4 || place > 3) return false;
+    store.set('rate-asked', true); return true;
+  },
+  open() { store.set('rate-asked', true); openLink(LINKS.play); },
+};
+async function openSettings() {
+  $('sAds').hidden = true; $('settings').hidden = false;
+  // UK/EU players must be able to change their ad consent; AdMob says when that applies
+  if (money.adMob) try { const ci = await money.adMob.requestConsentInfo(); $('sAds').hidden = ci.privacyOptionsRequirementStatus !== 'REQUIRED'; } catch (e) {}
+}
+$('btnSettings').addEventListener('click', () => { sfx.init(); sfx.ui(); openSettings(); });
+$('sBack').addEventListener('click', () => { sfx.ui(); $('settings').hidden = true; });
+$('sRate').addEventListener('click', () => rating.open());
+$('sPrivacy').addEventListener('click', () => openLink(LINKS.privacy));
+$('sTerms').addEventListener('click', () => openLink(LINKS.terms));
+$('sContact').addEventListener('click', () => openLink(LINKS.contact));
+$('sAds').addEventListener('click', () => { if (money.adMob) money.adMob.showPrivacyOptionsForm().catch(() => {}); });
+$('rRateYes').addEventListener('click', () => { $('rRate').hidden = true; marbles[playerIdx].askRate = false; rating.open(); });
+$('rRateNo').addEventListener('click', () => { sfx.ui(); $('rRate').hidden = true; marbles[playerIdx].askRate = false; });
 // daily reward: a 7-day streak, missing a day starts it again
 function dailyState() {
   const d = store.get('daily') || { last: '', streak: 0 };
