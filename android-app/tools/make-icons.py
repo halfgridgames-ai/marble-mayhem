@@ -17,6 +17,9 @@ BG = (0x14, 0x1C, 0x3A, 255)  # #141c3a
 # Share of the icon that shows inside the adaptive icon's visible 72dp centre.
 # 1.0 = the whole icon shows; 0.667 = the icon fills the full 108dp layer (centre only shows).
 ADAPTIVE_SHOW = 0.85
+# Where the marble's centre sits in the source icon, as a share of its width/height.
+# Phone icons are centred on this point so round icons frame the marble.
+FOCUS = (244 / 512, 272 / 512)
 
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
 SS = 4  # supersampling factor for smooth mask edges
@@ -44,8 +47,18 @@ def legacy(src, px, kind):
     return canvas
 
 
+def centred(src):
+    # Shift the artwork so FOCUS lands in the middle; a slightly enlarged copy fills the edges.
+    w, h = src.size
+    dx, dy = round(w / 2 - FOCUS[0] * w), round(h / 2 - FOCUS[1] * h)
+    pad = 2 * max(abs(dx), abs(dy))
+    out = src.resize((w + pad, h + pad), Image.LANCZOS).crop((pad // 2, pad // 2, pad // 2 + w, pad // 2 + h))
+    out.alpha_composite(src, (max(dx, 0), max(dy, 0)), (max(-dx, 0), max(-dy, 0)))
+    return out
+
+
 def main():
-    src = Image.open(SRC).convert("RGBA")
+    src = centred(Image.open(SRC).convert("RGBA"))
     for name, scale in DENSITIES.items():
         d = os.path.join(RES, "mipmap-" + name)
         os.makedirs(d, exist_ok=True)
