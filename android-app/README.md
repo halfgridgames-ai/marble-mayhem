@@ -118,19 +118,19 @@ Events the game logs:
 Events show up in Firebase within a day (Analytics -> Events); DebugView shows them live
 for a test phone.
 
-## Before launch: swap test ids for real ones
+## Ads and in-app products
 
-Everything ships with Google's public **test** ids, so you can't accidentally click your
-own real ads during testing. Change all of these before publishing:
+Since 1.0.8 the app uses the real AdMob ids for Marble Mayhem (AdMob publisher
+`pub-4390358547833612`). Add your own phone under AdMob -> Settings -> Test devices so it
+always gets test ads; never tap real ads on your own app.
 
 1. **AdMob app id**: `android/app/src/main/AndroidManifest.xml`, the
-   `com.google.android.gms.ads.APPLICATION_ID` meta-data (marked `REPLACE BEFORE LAUNCH`).
-   Replace `ca-app-pub-3940256099942544~3347511713` with your app id from the AdMob console
-   (Apps -> your app -> App settings). App ids contain a `~`.
+   `com.google.android.gms.ads.APPLICATION_ID` meta-data. App ids contain a `~`.
+   Google's test app id is `ca-app-pub-3940256099942544~3347511713`.
 2. **Ad unit ids**: in the game's `index.html`, the `AD_UNITS` object (rewarded and
-   interstitial). Replace them with the ad unit ids from AdMob (Apps -> Ad units). These
-   contain a `/`.
-3. **Test mode**: in the game's `index.html`, set `AD_TESTING = false`.
+   interstitial), from AdMob (Apps -> Ad units). These contain a `/`.
+3. **Test mode**: in the game's `index.html`, `AD_TESTING` is `false` for real ads. Set it
+   to `true` to request test ads instead.
 4. **In-app products**: in the game's `index.html`, the `PRODUCTS` list. Each `id` must
    exactly match a product you create in Play Console (Monetize -> Products -> In-app
    products). Make the one-time items (`once: true`) and the coin packs, then activate them.

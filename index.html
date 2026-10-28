@@ -3247,9 +3247,9 @@ function raceMode() { return net ? 'online' : gp ? 'grand_prix' : 'single'; }
 // ---------- money: rewarded ads, light interstitials, in-app purchases ----------
 // In the Android app this talks to AdMob and Google Play Billing. Everywhere else it runs in test mode:
 // ads are a short stand-in card and purchases are free test purchases, so every flow can be tried.
-// Before launch, swap the Google test ad unit ids below for real ones from AdMob.
-const AD_UNITS = { rewarded: 'ca-app-pub-3940256099942544/5224354917', interstitial: 'ca-app-pub-3940256099942544/1033173712' };
-const AD_TESTING = true;   // set false for the release build once real ad unit ids are in
+// Real AdMob ad units for Marble Mayhem (AdMob app id is in android-app/android/app/src/main/AndroidManifest.xml).
+const AD_UNITS = { rewarded: 'ca-app-pub-4390358547833612/3554836195', interstitial: 'ca-app-pub-4390358547833612/4616636422' };
+const AD_TESTING = false;  // real AdMob ids are in; set true to go back to Google's test ads
 // Product ids must match the in-app products created in Play Console. Prices shown here are fallbacks;
 // the app shows Google Play's local price once the store has loaded.
 const PRODUCTS = [
@@ -3274,7 +3274,7 @@ const PRODUCTS = [
 const findProduct = id => PRODUCTS.find(p => p.id === id);
 const REWARD = { shopCoins: 100, shopCooldown: 240, dailyCap: 12 };
 const DAILY = [100, 150, 200, 250, 300, 400, 750];
-const INTERSTITIAL = { everyRaces: 2, minGap: 90, graceRaces: 1 };
+const INTERSTITIAL = { everyRaces: 3, minGap: 120, graceRaces: 3 };
 const today = () => new Date().toISOString().slice(0, 10);
 const money = {
   native: !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()),
