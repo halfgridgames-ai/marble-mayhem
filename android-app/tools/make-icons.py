@@ -14,6 +14,10 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(APP, "..", "web", "icon
 RES = os.path.join(APP, "android", "app", "src", "main", "res")
 BG = (0x14, 0x1C, 0x3A, 255)  # #141c3a
 
+# Share of the icon that shows inside the adaptive icon's visible 72dp centre.
+# 1.0 = the whole icon shows; 0.667 = the icon fills the full 108dp layer (centre only shows).
+ADAPTIVE_SHOW = 0.85
+
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
 SS = 4  # supersampling factor for smooth mask edges
 
@@ -49,10 +53,14 @@ def main():
         legacy(src, px, "square").save(os.path.join(d, "ic_launcher.png"))
         legacy(src, px, "circle").save(os.path.join(d, "ic_launcher_round.png"))
         # Adaptive foreground: 108dp layer, launcher shows the centre 72dp (safe circle 66dp).
-        # The game icon is full-bleed artwork, so it fills the whole layer; the marble
-        # sits inside the safe zone. Background colour lives in values/ic_launcher_background.xml.
+        # The icon is drawn so ADAPTIVE_SHOW of it falls inside that centre, on top of a
+        # full-layer copy so the edges revealed by launcher animations are never empty.
         fg_px = round(108 * scale)
-        src.resize((fg_px, fg_px), Image.LANCZOS).save(os.path.join(d, "ic_launcher_foreground.png"))
+        fg = src.resize((fg_px, fg_px), Image.LANCZOS)
+        art_px = min(fg_px, round(72 * scale / ADAPTIVE_SHOW))
+        off = (fg_px - art_px) // 2
+        fg.alpha_composite(src.resize((art_px, art_px), Image.LANCZOS), (off, off))
+        fg.save(os.path.join(d, "ic_launcher_foreground.png"))
 
     # Splash screens (shown while the WebView boots): icon centred on the game background colour.
     for f in os.listdir(RES):
