@@ -181,6 +181,9 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 @media (prefers-reduced-motion: reduce) { .go:active { transform: none; } }
 .buy.cash { background: var(--mint); color: #08392b; box-shadow: 0 3px 0 #1f8f6f; }
 .buy.ad { background: #7b5cff; color: #fff; box-shadow: 0 3px 0 #4b33b8; }
+.mcard .unl { display: flex; flex-direction: column; gap: 4px; width: 100%; font-size: 12px; font-weight: 800; color: var(--ink); }
+.mcard .unl .bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.mcard .unl .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff3dbb, #ffd23f); }
 .item .tagline { display: inline-block; margin-left: 6px; background: var(--danger); color: #fff; border-radius: 6px; padding: 0 6px; font-size: 11px; font-weight: 800; vertical-align: 1px; }
 .dot.pack { display: flex; align-items: center; justify-content: center; font-size: 20px; background: radial-gradient(circle at 35% 30%, #fff3b0, #f2b600 55%, #9a6400); }
 /* marble pictures: glow for legendaries, a rider emoji for mythics */
@@ -677,6 +680,18 @@ const SPECIALS = [
     css: 'linear-gradient(180deg, #ffffff, #9fb4c8 45%, #f4f8ff 52%, #5e6b7a)', perk: 'A robot pilot. Coin magnet and steering +10%', stats: { magnet: 2, steer: 1.1 } },
   { id: 'froggo', rarity: 'mythic', name: 'King Froggo', box: true, look: 'lily', rider: 'frog', emoji: '🐸', color: '#3cc24a', glow: '#b6ff5c', trail: 'rainbow',
     css: 'radial-gradient(circle at 30% 35%, #8be04a 0 4px, transparent 5px), radial-gradient(circle at 65% 65%, #1d8a2c 0 5px, transparent 6px), #3cc24a', perk: 'Only found in Mystery Boxes. +25% coins from every race.', stats: { coinMul: 1.25 } },
+  // character marbles you earn by playing rather than buying, so there's always something to chase
+  { id: 'pip', rarity: 'mythic', name: 'Pip', look: 'pip', rider: 'penguin', emoji: '🐧', color: '#7fd4ff', stripe: '#ffffff', glow: '#bfe8ff', trail: '#e6f6ff',
+    unlock: { kind: 'streak', need: 7, text: 'Claim the daily reward 7 days in a row' },
+    css: 'repeating-linear-gradient(160deg, #7fd4ff 0 7px, #ffffff 7px 11px)', perk: 'A penguin in a bobble hat. Steering +10%', stats: { steer: 1.1 } },
+  { id: 'rusty', rarity: 'mythic', name: 'Rusty', look: 'rusty', rider: 'fox', emoji: '🦊', color: '#ff7a1f', stripe: '#fff3e0', glow: '#ffb36b', trail: '#ffb36b',
+    unlock: { kind: 'trophy', cup: 'frontier', text: 'Win gold in the Frontier Cup' },
+    css: 'repeating-linear-gradient(160deg, #ff7a1f 0 7px, #fff3e0 7px 11px)', perk: 'A quick little fox. Coin magnet and +15% coins', stats: { magnet: 1.8, coinMul: 1.15 } },
+  { id: 'bao', rarity: 'mythic', name: 'Bao', look: 'bao', rider: 'panda', emoji: '🐼', color: '#f4f4ee', stripe: '#1a1a1f', glow: '#ffffff', trail: '#9fe07a',
+    unlock: { kind: 'hits', need: 50, text: 'Land 50 hits on rivals with items' },
+    css: 'repeating-linear-gradient(160deg, #f4f4ee 0 7px, #1a1a1f 7px 11px)', perk: 'A snacking panda. Bump recharges 25% faster', stats: { bump: 0.75 } },
+  { id: 'rex', rarity: 'mythic', name: 'Rex', price: 12000, look: 'rex', rider: 'dino', emoji: '🦖', color: '#ffbf1f', stripe: '#ff7a3d', glow: '#ffd23f', trail: '#ff7a3d',
+    css: 'repeating-linear-gradient(160deg, #ffbf1f 0 7px, #ff7a3d 7px 11px)', perk: 'A tiny T. rex with a big grin. Nudge +20%', stats: { push: 1.2 } },
 ];
 const RARITY = { common: { name: 'Common', color: '#9aa6c4' }, rare: { name: 'Rare', color: '#3aa0ff' }, epic: { name: 'Epic', color: '#a46bff' },
   legendary: { name: 'Legendary', color: '#ffab2e' }, mythic: { name: 'Mythic', color: '#ff3dbb' } };
@@ -1120,17 +1135,21 @@ function canvasTex(draw) {
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t;
 }
 function vGrad(g, stops) { const gr = g.createLinearGradient(0, 0, 0, 128); stops.forEach(([o, c]) => gr.addColorStop(o, c)); g.fillStyle = gr; g.fillRect(0, 0, 256, 128); }
-// little characters that ride on top of mythic marbles (built from simple shapes, facing +z)
+// Riders: little characters on top of mythic marbles, built from simple shapes facing +z. The outer group turns to face the way the marble is going;
+// everything is built inside `pose`, which the animation bobs, squashes, tilts and spins. Eyes are tagged so they can blink.
 function buildRider(kind) {
-  const g = new THREE.Group(), M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.45, ...o });
-  const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; g.add(m); return m; };
+  const g = new THREE.Group(), pose = new THREE.Group(), eyes = [], M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.45, ...o });
+  g.add(pose);
+  const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; pose.add(m); return m; };
   const ball = r => new THREE.SphereGeometry(r, 18, 14), black = M('#141414', { roughness: 0.2 }), white = M('#ffffff');
+  const eye = (x, y, z, r = 0.03) => { const e = add(ball(r), black, x, y, z); eyes.push(e); return e; };
+  const shine = (x, y, z) => add(ball(0.011), M('#ffffff', { emissive: '#ffffff', emissiveIntensity: 0.6 }), x, y, z);
   if (kind === 'duck') {
     const y = M('#ffd23f');
     add(ball(0.22), y, 0, 0.16, 0, 1, 0.8, 1.25);
     add(ball(0.15), y, 0, 0.38, 0.12);
     add(new THREE.ConeGeometry(0.07, 0.16, 12), M('#ff8a1a'), 0, 0.36, 0.3).rotation.x = Math.PI / 2;
-    add(ball(0.03), black, 0.07, 0.43, 0.24); add(ball(0.03), black, -0.07, 0.43, 0.24);
+    eye(0.07, 0.43, 0.24); eye(-0.07, 0.43, 0.24);
     add(new THREE.CylinderGeometry(0.17, 0.17, 0.035, 20), M('#1a2a5a'), 0, 0.5, 0.12);       // captain's hat
     add(new THREE.CylinderGeometry(0.11, 0.13, 0.1, 20), white, 0, 0.56, 0.12);
     add(new THREE.BoxGeometry(0.06, 0.03, 0.02), M('#ffd23f', { emissive: '#7a5a00' }), 0, 0.57, 0.23);
@@ -1141,7 +1160,7 @@ function buildRider(kind) {
     add(ball(0.17), f, 0, 0.4, 0.06);
     add(ball(0.08), o, -0.08, 0.47, 0.06, 1, 0.8, 0.6);   // orange patch
     for (const sx of [-1, 1]) { const e = add(new THREE.ConeGeometry(0.06, 0.12, 4), sx < 0 ? o : f, sx * 0.1, 0.57, 0.06); e.rotation.z = -sx * 0.3; }
-    add(ball(0.03), black, 0.065, 0.42, 0.21); add(ball(0.03), black, -0.065, 0.42, 0.21);
+    eye(0.065, 0.42, 0.21); eye(-0.065, 0.42, 0.21);
     add(ball(0.02), M('#ff6fa8'), 0, 0.38, 0.23);
     const tail = add(new THREE.TorusGeometry(0.12, 0.03, 8, 16, Math.PI), o, 0, 0.25, -0.22); tail.rotation.y = Math.PI / 2;
     add(ball(0.05), M('#ff3d6e'), 0.17, 0.4, 0.08);   // a bell-like charm
@@ -1149,7 +1168,7 @@ function buildRider(kind) {
     const steel = M('#b9c6d6', { metalness: 0.6, roughness: 0.25 });
     add(new THREE.BoxGeometry(0.3, 0.24, 0.24), steel, 0, 0.14, 0);
     add(new THREE.BoxGeometry(0.26, 0.2, 0.22), steel, 0, 0.38, 0.02);
-    add(new THREE.BoxGeometry(0.2, 0.07, 0.02), M('#39f5ff', { emissive: '#39f5ff', emissiveIntensity: 1.5 }), 0, 0.39, 0.135);
+    eyes.push(add(new THREE.BoxGeometry(0.2, 0.07, 0.02), M('#39f5ff', { emissive: '#39f5ff', emissiveIntensity: 1.5 }), 0, 0.39, 0.135));   // the visor blinks like eyes
     add(new THREE.CylinderGeometry(0.012, 0.012, 0.14, 6), steel, 0, 0.55, 0.02);
     g.userData.blink = add(ball(0.04), M('#ff3d3d', { emissive: '#ff3d3d', emissiveIntensity: 2 }), 0, 0.63, 0.02);
     for (const sx of [-1, 1]) add(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 8), steel, sx * 0.2, 0.15, 0.04).rotation.z = sx * 0.6;
@@ -1157,15 +1176,98 @@ function buildRider(kind) {
     const gr = M('#3cc24a'), light = M('#b6ff5c');
     add(ball(0.22), gr, 0, 0.14, 0, 1.15, 0.75, 1.1);
     add(ball(0.15), light, 0, 0.12, 0.1, 1, 0.6, 0.9);
-    for (const sx of [-1, 1]) { add(ball(0.08), gr, sx * 0.1, 0.3, 0.12); add(ball(0.05), white, sx * 0.1, 0.33, 0.17); add(ball(0.03), black, sx * 0.1, 0.34, 0.21); }
+    for (const sx of [-1, 1]) { add(ball(0.08), gr, sx * 0.1, 0.3, 0.12); add(ball(0.05), white, sx * 0.1, 0.33, 0.17); eye(sx * 0.1, 0.34, 0.21); }
     add(new THREE.TorusGeometry(0.07, 0.015, 6, 16, Math.PI), M('#1d5a22'), 0, 0.2, 0.2).rotation.z = Math.PI;
     const gold = M('#ffd23f', { metalness: 0.8, roughness: 0.2, emissive: '#7a5a00', emissiveIntensity: 0.6 });   // crown
     add(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 16, 1, true), gold, 0, 0.42, 0.04);
     for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; add(new THREE.ConeGeometry(0.03, 0.08, 6), gold, Math.cos(a) * 0.1, 0.48, 0.04 + Math.sin(a) * 0.1); }
     add(ball(0.025), M('#ff3dbb', { emissive: '#ff3dbb' }), 0, 0.43, 0.14);
+  } else if (kind === 'penguin') {
+    const ink = M('#1d2433'), belly = M('#f4f7fb'), orange = M('#ff9a1f'), scarf = M('#e8364a');
+    add(ball(0.2), ink, 0, 0.28, 0, 1, 1.45, 0.95);                       // one egg-shaped body
+    add(ball(0.16), belly, 0, 0.22, 0.135, 0.85, 1.15, 0.5);
+    add(ball(0.1), belly, 0, 0.44, 0.13, 1.25, 0.75, 0.5);                // face
+    eye(0.055, 0.46, 0.19, 0.028); eye(-0.055, 0.46, 0.19, 0.028); shine(0.062, 0.475, 0.213); shine(-0.048, 0.475, 0.213);
+    add(new THREE.ConeGeometry(0.04, 0.1, 10), orange, 0, 0.41, 0.24).rotation.x = Math.PI / 2;
+    for (const sx of [-1, 1]) { const w = add(ball(0.07), ink, sx * 0.19, 0.24, 0, 0.35, 1.3, 0.8); w.rotation.z = sx * 0.3; add(ball(0.05), orange, sx * 0.08, 0.0, 0.08, 1.2, 0.4, 1.4); }
+    add(new THREE.TorusGeometry(0.165, 0.035, 8, 22), scarf, 0, 0.35, 0).rotation.x = Math.PI / 2;   // a red scarf
+    add(new THREE.BoxGeometry(0.06, 0.15, 0.03), scarf, 0.08, 0.27, 0.15).rotation.z = 0.25;
+    add(new THREE.SphereGeometry(0.13, 16, 10, 0, TAU, 0, Math.PI / 2), M('#3aa0ff'), 0, 0.53, 0);   // bobble hat
+    add(ball(0.045), white, 0, 0.67, 0);
+  } else if (kind === 'fox') {
+    const fur = M('#ff7a1f'), cream = M('#fff3e0'), dark = M('#3a2016');
+    add(ball(0.19), fur, 0, 0.17, -0.02, 1, 0.95, 1.1);
+    add(ball(0.12), cream, 0, 0.16, 0.165, 0.9, 1.1, 0.45);
+    add(ball(0.16), fur, 0, 0.42, 0.04, 1.1, 0.95, 1);
+    add(new THREE.ConeGeometry(0.09, 0.2, 14), cream, 0, 0.38, 0.2).rotation.x = Math.PI / 2;   // snout
+    add(ball(0.03), dark, 0, 0.38, 0.3);
+    for (const sx of [-1, 1]) {
+      const e = add(new THREE.ConeGeometry(0.065, 0.17, 4), fur, sx * 0.1, 0.6, 0.02); e.rotation.z = -sx * 0.25;
+      add(new THREE.ConeGeometry(0.035, 0.1, 4), dark, sx * 0.1, 0.63, 0.04).rotation.z = -sx * 0.25;
+      eye(sx * 0.07, 0.46, 0.17, 0.027); shine(sx * 0.07 + 0.008, 0.47, 0.195);
+    }
+    const tail = add(ball(0.1), fur, 0, 0.22, -0.28, 0.8, 0.8, 1.7); tail.rotation.x = -0.6; g.userData.tail = tail;
+    add(ball(0.06), cream, 0, 0.33, -0.43, 0.9, 0.9, 1.2);
+    add(new THREE.TorusGeometry(0.1, 0.022, 6, 18), M('#2fa35b'), 0, 0.31, 0.03).rotation.x = Math.PI / 2;   // green bandana
+  } else if (kind === 'panda') {
+    const w = M('#fbfbf6'), k = M('#1a1a1f');
+    add(ball(0.21), w, 0, 0.17, 0, 1.05, 0.95, 1);
+    add(ball(0.17), w, 0, 0.44, 0.04);
+    for (const sx of [-1, 1]) {
+      add(ball(0.06), k, sx * 0.12, 0.58, 0.02);                          // ears
+      add(ball(0.05), k, sx * 0.065, 0.46, 0.17, 0.9, 1.2, 0.5).rotation.z = sx * 0.5;   // eye patches
+      eye(sx * 0.065, 0.465, 0.195, 0.022); shine(sx * 0.065 + 0.006, 0.474, 0.212);
+      const arm = add(ball(0.07), k, sx * 0.2, 0.24, 0.06, 0.8, 1.3, 0.8); arm.rotation.z = sx * 0.5;
+      add(ball(0.07), k, sx * 0.1, 0.03, 0.08, 1, 0.7, 1.2);              // feet
+    }
+    add(ball(0.025), k, 0, 0.41, 0.2);
+    const leaf = add(new THREE.CylinderGeometry(0.006, 0.006, 0.3, 6), M('#5fae3a'), 0.12, 0.36, 0.18); leaf.rotation.set(0.3, 0, 0.9);   // a bamboo snack
+    add(ball(0.04), M('#7fd05a'), 0.24, 0.43, 0.2, 1.6, 0.5, 0.8);
+  } else if (kind === 'dino') {
+    const gr = M('#4fd07a'), belly = M('#d8ffb0'), spike = M('#ff7a3d');
+    add(ball(0.2), gr, 0, 0.18, -0.02, 1, 1, 1.15);
+    add(ball(0.13), belly, 0, 0.16, 0.17, 0.9, 1.1, 0.45);
+    add(ball(0.16), gr, 0, 0.44, 0.08, 1, 0.85, 1.25);                    // a big head pushed forward
+    add(ball(0.11), gr, 0, 0.39, 0.22, 1.05, 0.7, 0.9);                   // snout
+    for (const sx of [-1, 1]) { add(ball(0.045), white, sx * 0.08, 0.53, 0.17); eye(sx * 0.08, 0.535, 0.2, 0.026); add(ball(0.035), gr, sx * 0.15, 0.24, 0.14, 0.8, 1, 1.2); add(ball(0.012), black, sx * 0.035, 0.42, 0.315); }
+    add(new THREE.TorusGeometry(0.07, 0.012, 6, 14, Math.PI), M('#1d5a22'), 0, 0.37, 0.28).rotation.z = Math.PI;   // a toothy grin
+    for (let k = 0; k < 5; k++) { const sp = add(new THREE.ConeGeometry(0.05, 0.13, 6), spike, 0, 0.6 - k * 0.1, -0.02 - k * 0.06 - (k > 1 ? 0.04 : 0)); sp.rotation.x = -0.4 - k * 0.22; }
+    const tail = add(new THREE.ConeGeometry(0.08, 0.3, 10), gr, 0, 0.12, -0.3); tail.rotation.x = -1.9; g.userData.tail = tail;
   }
+  g.userData.pose = pose; g.userData.eyes = eyes;
   g.scale.setScalar(1.35);
   return g;
+}
+// keeps riders alive: breathing, blinking, a lean into speed, a wagging tail, dizzy stars after a hit,
+// a hop when they overtake someone and a victory dance on the podium. `st` holds the times of those moments.
+const starShape = (() => { const sh = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * TAU - Math.PI / 2, r = k % 2 ? 0.035 : 0.08; k ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); } return sh; })();
+const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.02, bevelEnabled: false });
+const starMat = new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb000', emissiveIntensity: 0.8 });
+function poseRider(r, st, t, dt) {
+  const pose = r.userData.pose, ph = t * 3.2 + (st.seed || 0);
+  let y = Math.sin(ph) * 0.02, sy = 1 + Math.sin(ph) * 0.03, rx = clamp((st.speed || 0) / 70, 0, 0.28), rz = Math.sin(ph * 0.5) * 0.05, ry = 0;
+  if (st.air) { sy *= 1.08; rx -= 0.25; }   // whee: leans back in the air
+  const blinkAt = (t + (st.seed || 0) * 0.9) % 3.4;
+  for (const e of r.userData.eyes) e.scale.y = blinkAt < 0.12 ? 0.15 : 1;
+  if (r.userData.tail) r.userData.tail.rotation.y = Math.sin(t * 9 + (st.seed || 0)) * 0.45;
+  // knocked about: squash on impact, then wobble with stars circling
+  const h = t - (st.hitAt ?? -99), dizzy = h < 1.6;
+  if (dizzy) { sy *= 1 - 0.38 * Math.exp(-h * 9); rz += Math.sin(h * 13) * 0.38 * (1 - h / 1.6); ry += Math.sin(h * 6.5) * 0.5 * (1 - h / 1.6); }
+  if (dizzy && !r.userData.stars) {
+    const s = new THREE.Group(); for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(starGeo, starMat); m.userData.k = k; s.add(m); }
+    r.userData.stars = s; r.add(s);
+  }
+  if (r.userData.stars) {
+    const s = r.userData.stars; s.visible = dizzy;
+    if (dizzy) { s.position.y = 0.72; s.children.forEach(m => { const a = h * 7 + m.userData.k * TAU / 3; m.position.set(Math.cos(a) * 0.19, Math.sin(a * 2) * 0.03, Math.sin(a) * 0.19); m.rotation.y = -a; m.rotation.z = h * 6; }); s.scale.setScalar(Math.min(1, h * 6) * (h > 1.3 ? (1.6 - h) / 0.3 : 1)); }
+  }
+  // a quick hop and a spin after overtaking
+  const c = t - (st.cheerAt ?? -99);
+  if (c < 0.7 && !dizzy) { const f = c / 0.7; y += Math.sin(f * Math.PI) * 0.32; ry += smooth(f) * TAU; sy *= 1 + Math.sin(f * Math.PI) * 0.12; }
+  // podium: three hops with a spin on the last one
+  const v = t - (st.winAt ?? -99);
+  if (v < 2.4) { y += Math.abs(Math.sin(v * 7.8)) * 0.42 * (1 - v / 2.4); rz = Math.sin(v * 15.6) * 0.25; if (v > 1.2) ry += (v - 1.2) * 14; }
+  pose.position.y = y; pose.scale.set(1 / Math.sqrt(sy), sy, 1 / Math.sqrt(sy)); pose.rotation.set(rx, ry, rz);
 }
 const matCache = {};
 function matFor(def) {
@@ -1217,6 +1319,7 @@ function matFor(def) {
     case 'pixel': { const t = canvasTex(g => { const cols = ['#ff3dbb', '#00e5ff', '#ffe14d', '#7b5cff', '#ffffff'];
         for (let y = 0; y < 8; y++) for (let x = 0; x < 16; x++) { g.fillStyle = cols[Math.floor(r() * cols.length)]; g.fillRect(x * 16, y * 16, 16, 16); } });
       t.magFilter = THREE.NearestFilter; mat = new THREE.MeshPhysicalMaterial({ ...base, roughness: 0.35, map: t }); break; }
+    case 'pip': case 'rusty': case 'bao': case 'rex': mat = new THREE.MeshPhysicalMaterial({ ...base, map: marbleTexture(def), emissiveMap: null }); break;
     default: mat = new THREE.MeshPhysicalMaterial({ ...base, map: marbleTexture(def) });
   }
   return (matCache[def.id] = mat);
@@ -2164,7 +2267,24 @@ const econ = {
   save() { store.set('coins', this.coins); store.set('owned', this.owned); store.set('upg', this.upg); },
 };
 econ.save();
-const owns = d => (!d.price && !d.iap && !d.box) || econ.owned.includes(d.id);
+const owns = d => (!d.price && !d.iap && !d.box && !d.unlock) || econ.owned.includes(d.id);
+// how far along an earnable marble is: [done, needed]
+function unlockProgress(d) {
+  const u = d.unlock; if (!u) return null;
+  if (u.kind === 'streak') return [Math.min(u.need, store.get('bestStreak') || 0), u.need];
+  if (u.kind === 'hits') return [Math.min(u.need, store.get('hitsTotal') || 0), u.need];
+  if (u.kind === 'trophy') return [store.get('trophy-' + u.cup) === 1 ? 1 : 0, 1];
+  return [0, 1];
+}
+// hand over any marble that has just been earned, and say so
+function checkUnlocks() {
+  for (const d of SPECIALS) {
+    if (!d.unlock || econ.owned.includes(d.id)) continue;
+    const [a, b] = unlockProgress(d); if (a < b) continue;
+    econ.owned.push(d.id); econ.save(); unlockedNow.push(d);
+  }
+}
+const unlockedNow = [];
 { const sm = store.get('marble'); selMarble = typeof sm === 'number' ? MARBLES[sm].id : (sm || 'comet'); if (!owns(findMarble(selMarble))) selMarble = 'comet'; }
 function playerStats() {
   const p = findMarble(selMarble).stats || {};
@@ -2414,6 +2534,7 @@ function showPodium() {
   econ.coins += prize; econ.save();
   const tkey = 'trophy-' + gp.cup.id, prev = store.get(tkey);
   if (myPlace <= 3 && (!prev || myPlace < prev)) store.set(tkey, myPlace);
+  checkUnlocks();
   state = 'menu'; $('results').hidden = true; $('hud').hidden = true; $('podium').hidden = false;
   $('pTitle').textContent = myPlace === 1 ? `${gp.cup.name} champion!` : myPlace <= 3 ? `${ordinal(myPlace)} in the ${gp.cup.name}` : `${ordinal(myPlace)} overall`;
   $('pSub').textContent = myPlace <= 3 ? `${gp.cup.trophy.icon} You take home the ${['gold', 'silver', 'bronze'][myPlace - 1]} ${gp.cup.trophy.name}.` : `Finish in the top three to win the ${gp.cup.trophy.name}.`;
@@ -2436,7 +2557,7 @@ function openBox() {
   let r = Math.random() * 100, tier = 'coins';
   for (const [t, w] of BOX.odds) { r -= w; if (r <= 0) { tier = t; break; } }
   if (tier === 'coins') return { coins: 250 + Math.round(Math.random() * 10) * 100 };
-  const pool = SPECIALS.filter(d => d.rarity === tier && !owns(d));
+  const pool = SPECIALS.filter(d => d.rarity === tier && !owns(d) && !d.unlock);
   if (!pool.length) return { coins: BOX.fallback[tier], tier, dupe: true };
   const d = pool[Math.floor(Math.random() * pool.length)];
   econ.owned.push(d.id); return { marble: d };
@@ -2458,11 +2579,20 @@ function revealBox(res) {
     emitConfetti();
   }, 1400);
 }
+// an earned marble gets its own reveal, using the Mystery Box card
+function showUnlocks() {
+  const d = unlockedNow.shift(); if (!d) return;
+  const el = $('boxReveal'), rc = RARITY[d.rarity].color; $('boxOverlay').hidden = false;
+  el.innerHTML = `<div class="burst">${dotHtml(d).replace('class="dot', 'class="dot huge')}</div><div class="rar" style="color:${rc}">Unlocked!</div><h1>${d.name}!</h1>
+    <p class="tag">${d.unlock.text}. ${d.perk}</p><div class="row"><button class="go" data-boxequip="${d.id}">Equip it</button><button class="ghost" data-boxclose="1">Later</button></div>`;
+  flash(rc, 0.5); sfx.finish && sfx.finish(true); emitConfetti();
+}
 function emitConfetti() { if (track) emit(camera.position.clone().add(_t.set(0, -1, -4).applyQuaternion(camera.quaternion)), 80, { rainbow: true, speed: 7, life: 1.1, up: 0.6, grav: 0.5 }); }
 $('boxOverlay').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.boxequip) { selMarble = b.dataset.boxequip; store.set('marble', selMarble); $('shopMsg').textContent = `${findMarble(selMarble).name} equipped.`; }
-  $('boxOverlay').hidden = true; renderShop();
+  $('boxOverlay').hidden = true; renderShop(); if (state === 'menu') renderMenu();
+  if (unlockedNow.length) setTimeout(showUnlocks, 250);
 });
 // one marble you don't own is on sale each day
 function dailyDeal() {
@@ -2481,6 +2611,7 @@ function marbleCard(d) {
     : own ? `<button class="buy eq" data-equip="${d.id}">Equip</button>`
     : d.iap ? `<button class="buy cash" data-iap="${d.iap}">${money.price(findProduct(d.iap))}</button>`
     : d.box ? '<button class="buy" data-tab="featured">🎁 Mystery Box only</button>'
+    : d.unlock ? (([a, b]) => `<div class="unl"><span>${d.unlock.text}</span><span class="bar"><i style="width:${Math.round(a / b * 100)}%"></i></span><span class="sub">${b > 1 ? a + ' / ' + b : 'Not yet'}</span></div>`)(unlockProgress(d))
     : `<button class="buy" data-buy="${d.id}" ${short > 0 ? 'disabled' : ''}><i class="coin"></i>${d.price.toLocaleString()}</button>`;
   const tryBtn = !own && !d.box && RANK[d.rarity] >= 3 && money.rewardsLeft() > 0 ? `<button class="try" data-try="${d.id}">▶ Watch an ad to try it for a race</button>` : '';
   return `<div class="mcard ${d.rarity}${own ? ' owned' : ''}" style="--rc:${rc}">${dotHtml(d, true)}<span class="rar">${RARITY[d.rarity].name}</span><b>${d.name}</b>
@@ -2793,10 +2924,11 @@ function netFx(type, m, o) {
   else if (type === 'banana' || type === 'bananaF') { const pos = m.p.clone().addScaledVector(m.v, type === 'bananaF' ? 0.6 : -0.25); peelVisual(pos); if (near) sfx.peel(); }
   else if (type === 'hit') { if (m === me) niceHit(); }
   else if (type === 'bee') { if (o) launchBee(m, o); if (near) sfx.bee(); }
-  else if (type === 'sting') { stingFx(m); if (m.p.distanceTo(camera.position) < 45) sfx.sting(); const b = (track.bees || []).find(b => b.target === m); if (b) b.t = 99; if (m === me) { toast('Stung by a bee!'); setTimeout(() => toast(''), 1300); } }
+  else if (type === 'sting') { m.hitFx = performance.now() / 1000; stingFx(m); if (m.p.distanceTo(camera.position) < 45) sfx.sting(); const b = (track.bees || []).find(b => b.target === m); if (b) b.t = 99; if (m === me) { toast('Stung by a bee!'); setTimeout(() => toast(''), 1300); } }
   else if (type === 'magnet') { magnetFx(m); if (near) sfx.magnet(); }
   else if (type === 'pop') { ring(m.p, '#25d99a', 3); emit(m.p, 30, { color: '#9dffd9', speed: 6, life: 0.5, grav: 0.2 }); if (near) sfx.pop(); }
   else if (type === 'slip') {
+    m.hitFx = performance.now() / 1000;
     emit(m.p, 18, { color: '#ffd23f', speed: 4, life: 0.5, up: 0.6 }); if (near) sfx.slip();
     let k = -1, best = 3; netPeels.forEach((pl, j) => { const d = pl.pos.distanceTo(m.p); if (d < best) { best = d; k = j; } });
     if (k >= 0) { peelGone(netPeels[k].mesh); netPeels.splice(k, 1); }
@@ -3064,6 +3196,7 @@ async function claimDaily(double) {
   if (double && !(await money.showRewarded())) return;
   econ.coins += ds.amount * (double ? 2 : 1); econ.save();
   store.set('daily', { last: today(), streak: ds.streak });
+  store.set('bestStreak', Math.max(store.get('bestStreak') || 0, ds.streak)); checkUnlocks(); showUnlocks();
   $('daily').hidden = true; sfx.coin && sfx.coin(); renderMenu();
 }
 $('dailyClaim').addEventListener('click', () => claimDaily(false));
@@ -3392,7 +3525,7 @@ function auraFor(m) {
 }
 const _q = new THREE.Quaternion(), _dn = new V3();
 function updateAuras(dt) {
-  const t = performance.now() / 1000;
+  const t = performance.now() / 1000, order = state === 'race' && marbles.some(m => m.rider) ? raceOrder() : null;
   for (const m of marbles) {
     const a = auraFor(m), hidden = m.elim && m.p.y < -30;
     a.group.position.copy(m.p); a.group.visible = !hidden;
@@ -3425,12 +3558,11 @@ function updateAuras(dt) {
       m.rider.position.copy(m.p); m.rider.position.y += R * sc * 0.92 + (sc - 1) * R;
       if (m.v.x * m.v.x + m.v.z * m.v.z > 0.5) { const want = Math.atan2(m.v.x, m.v.z); let d = want - m.rider.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); m.rider.rotation.y += d * (1 - Math.exp(-dt * 8)); }
       if (simTime < (m.slipUntil || 0)) m.rider.rotation.y += dt * 22;
-      m.rider.rotation.z = Math.sin(t * 9 + m.i) * 0.06; m.rider.scale.setScalar(1.35 * sc);
+      m.rider.scale.setScalar(1.35 * sc);
       if (m.rider.userData.blink) m.rider.userData.blink.visible = Math.sin(t * 6) > -0.3;
-      if (m.celebrateAt) {   // a victory dance: three hops with a spin on the last one
-        const c = t - m.celebrateAt;
-        if (c < 2.4) { const hop = Math.abs(Math.sin(c * 7.8)) * 0.55 * (1 - c / 2.4); m.rider.position.y += hop; m.rider.rotation.z = Math.sin(c * 15.6) * 0.25; if (c > 1.2) m.rider.rotation.y += dt * 14; }
-      }
+      // overtaking someone earns a little hop (not too often, or a side-by-side duel would be all hops)
+      if (order) { const pl = order.indexOf(m); if (m.lastPl !== undefined && pl < m.lastPl && !m.finished && t - (m.cheerAt || 0) > 3) m.cheerAt = t; m.lastPl = pl; }
+      poseRider(m.rider, { seed: m.i, speed: m.v.length(), air: simTime - m.contactT > 0.25 && !m.out, hitAt: m.hitFx, cheerAt: m.cheerAt, winAt: m.celebrateAt }, t, dt);
     }
     if (simTime < (m.slipUntil || 0)) { m.mesh.rotateY(dt * 22); if (Math.random() < 0.5) emit(m.p, 1, { color: '#8d7bff', speed: 2, life: 0.4, grav: 0 }); }
     if (m.def.trail && !hidden && state !== 'menu' && m.v.lengthSq() > 4 && Math.random() < 0.7)
@@ -3734,7 +3866,7 @@ function updateBees(dt) {
       if (!blocked(o) && !(o.megaT > 0) && !(o.phaseT > 0) && !o.finished) {
         o.v.multiplyScalar(0.35); o.slipUntil = simTime + 0.9; o.stungAt = simTime;
         o.v.addScaledVector(track.arena ? UP : track.S[o.idx].N, 3);
-        netEvent('sting', o); landedHit(b.owner, o);
+        netEvent('sting', o); landedHit(b.owner, o); o.hitFx = performance.now() / 1000;
         if (!simulating) { stingFx(o); if (o.p.distanceTo(camera.position) < 45) sfx.sting(); if (o.player) { shake = 0.35; toast('Stung by ' + b.owner.def.name + '\'s bee!'); setTimeout(() => toast(''), 1300); } }
       }
     }
@@ -3763,7 +3895,7 @@ function landedHit(owner, victim) {
 let hitCombo = 0, hitComboAt = 0;
 function niceHit() {
   hitCombo = performance.now() - hitComboAt < 2500 ? hitCombo + 1 : 1; hitComboAt = performance.now();
-  hitCoins += HIT_COINS; hitsLanded++; sfx.hit();
+  hitCoins += HIT_COINS; hitsLanded++; sfx.hit(); store.set('hitsTotal', (store.get('hitsTotal') || 0) + 1);
   const el = $('hHit'); el.textContent = (hitCombo > 1 ? ['', '', 'Double hit!', 'Triple hit!'][hitCombo] || 'Mayhem!' : ['Nice hit!', 'Got em!', 'Bullseye!', 'Splat!'][Math.floor(Math.random() * 4)]) + ' +' + HIT_COINS;
   el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   const cb = $('hCoinBox'); cb.classList.remove('pop'); void cb.offsetWidth; cb.classList.add('pop');
@@ -3813,7 +3945,7 @@ function useItem(m) {
         if (track.arena) o.v.multiplyScalar(0.7).addScaledVector(d.divideScalar(dist), 4.5).addScaledVector(UP, 2.5);
         else o.v.multiplyScalar(0.4).addScaledVector(d.divideScalar(dist), 7).addScaledVector(track.S[o.idx].N, 4.5);
         if (o.player) { shake = 0.4; sfx.ouch(); toast('Shockwave! ' + m.def.name + ' blasted you.'); setTimeout(() => toast(''), 1400); }
-        landedHit(m, o);
+        landedHit(m, o); o.hitFx = performance.now() / 1000;
       }
     }
     if (!simulating) shockFx(m.p);
@@ -3830,7 +3962,7 @@ function useItem(m) {
       o.zapT = track.arena ? 1.1 : 2.4; o.v.multiplyScalar(track.arena ? 0.75 : 0.45);
       if (!simulating) zapFx(o.p);
       if (o.player) hitMe = true;
-      landedHit(m, o);
+      landedHit(m, o); o.hitFx = performance.now() / 1000;
     }
     sfx.zap(); flash('#fff7a8', m.player || hitMe ? 0.55 : 0.2);
     if (hitMe) { shake = 0.35; toast('Zapped by ' + m.def.name + '!'); setTimeout(() => toast(''), 1400); }
@@ -3849,7 +3981,7 @@ function pickupBoxes() {
         if (blocked(o) || o.megaT > 0) break;
         o.slipUntil = simTime + (track.arena ? 0.9 : 1.3); o.v.multiplyScalar(0.8);
         o.v.x += (Math.random() - 0.5) * 3; o.v.z += (Math.random() - 0.5) * 3;
-        netEvent('slip', o); landedHit(pl.owner, o);
+        netEvent('slip', o); landedHit(pl.owner, o); o.hitFx = performance.now() / 1000;
         if (!simulating) { emit(pl.pos, 18, { color: '#ffd23f', speed: 4, life: 0.5, up: 0.6 }); if (o.p.distanceTo(camera.position) < 40) sfx.slip(); if (o.player) { toast('Banana! Spinning out…'); setTimeout(() => toast(''), 1200); } }
         break;
       }
@@ -4113,7 +4245,7 @@ function update(dt) {
     $('bumpCd').style.setProperty('--cd', (clamp(((me.bumpReadyAt || 0) - simTime) / (BUMP_COOLDOWN * me.stats.bump), 0, 1) * 100).toFixed(1));
     if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) { $('hBanner').hidden = true; $('hBanner').textContent = ''; } }
     if (state === 'done' && raceTime > resultsShownAt) {
-      if ($('results').hidden) { $('results').hidden = false; bumpEl.classList.remove('on'); }
+      if ($('results').hidden) { $('results').hidden = false; bumpEl.classList.remove('on'); checkUnlocks(); if (unlockedNow.length) setTimeout(showUnlocks, 900); }
       if (raceTime - lastResultsRender > 0.3) { renderResults(); lastResultsRender = raceTime; }
     }
   }
