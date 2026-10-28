@@ -2713,6 +2713,7 @@ function startRace() {
   if (gp) { selTrack = gp.cup.tracks[gp.race]; loadTrack(selTrack); }
   else if (!track || track.src !== TRACKS[selTrack]) loadTrack(selTrack);
   else { finishOrder = []; createMarbles(); }
+  trackEvent('race_start', { track: track.def.id, mode: raceMode(), cup: gp ? gp.cup.id : '' });
   beginCountdown();
 }
 function beginCountdown() {
@@ -2725,6 +2726,7 @@ function beginCountdown() {
 function onPlayerFinish() {
   const me = marbles[playerIdx];
   const place = finishOrder.indexOf(me) + 1;
+  trackEvent('race_end', { track: track.def.id, mode: raceMode(), place, seconds: Math.round(me.finishTime) });
   showBanner(place === 1 ? 'You win!' : ordinal(place) + '!', place <= 3 ? 3 : 2.2, place <= 3 ? 'win p' + place : '');
   sfx.finish(place <= 3); emit(me.p, place <= 3 ? 160 : 60, { rainbow: true, speed: 9, up: 0.8, life: 1.4, grav: 0.6 });
   if (place <= 3) startCelebration(me, place);
@@ -3061,6 +3063,7 @@ function startNetRace(setup) {
   $('menu').hidden = true; $('results').hidden = true; $('podium').hidden = true; $('shop').hidden = true; $('daily').hidden = true; $('hud').hidden = false;
   loadTrack(setup.track, setup.seed, setup);
   net.racing = true; net.lastSend = 0; net.events = []; net.lastIn = 0; net.sentIn = '';
+  trackEvent('race_start', { track: track.def.id, mode: 'online', players: setup.roster.length });
   beginCountdown();
 }
 function backToRoom() {
@@ -3229,6 +3232,18 @@ function netFx(type, m, o) {
   }
 }
 
+// ---------- analytics ----------
+// In the Android app this logs events to Firebase Analytics, which also collects installs, sessions and
+// retention on its own. Everywhere else, and in builds without google-services.json, it does nothing.
+// (Called trackEvent because `track` is the current race track.)
+function trackEvent(name, params) {
+  try {
+    const fa = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins.FirebaseAnalytics;
+    if (fa) fa.logEvent({ name, params: params || {} }).catch(() => {});
+  } catch (e) {}
+}
+function raceMode() { return net ? 'online' : gp ? 'grand_prix' : 'single'; }
+
 // ---------- money: rewarded ads, light interstitials, in-app purchases ----------
 // In the Android app this talks to AdMob and Google Play Billing. Everywhere else it runs in test mode:
 // ads are a short stand-in card and purchases are free test purchases, so every flow can be tried.
@@ -3318,7 +3333,7 @@ const money = {
       else ok = await testAd(5);
     } catch (e) { ok = false; this.prepRewarded(); }
     this.busy = false; sfx.duck(false);
-    if (ok) this.noteReward();
+    if (ok) { this.noteReward(); trackEvent('rewarded_ad_watched'); }
     return ok;
   },
   // called when the player leaves the results screen; shows an ad only now and then, never mid-race
