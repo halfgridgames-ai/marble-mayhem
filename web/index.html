@@ -787,6 +787,10 @@ const CUPS = [
   { id: 'summit', name: 'Summit Cup', diff: 'Hard', dc: 'd-hard', tracks: [4, 2, 6, 1], trophy: { name: 'Summit Star', icon: '⛰️' }, blurb: 'Hairpins, desert freefalls, the sunset coaster and the tower.' },
   { id: 'inferno', name: 'Inferno Cup', diff: 'Hard', dc: 'd-hard', tracks: [11, 16, 21, 2], trophy: { name: 'Blazing Chalice', icon: '🔥' }, blurb: 'Lava slabs, an icy avalanche, the treetop trail and the canyon.' },
   { id: 'galaxy', name: 'Galaxy Cup', diff: 'Hard', dc: 'd-hard', tracks: [12, 20, 25, 24], trophy: { name: 'Comet Crown', icon: '☄️' }, blurb: 'Orbit station, comet chute, pinball palace and thunder run.' },
+  { id: 'toybox', name: 'Toy Box Cup', diff: 'Easy', dc: 'd-easy', tracks: [27, 28, 29, 30], trophy: { name: 'Teddy Trophy', icon: '🧸' }, blurb: 'Toy-block stairs, crayon forests, a toy train set and the bouncy castle.' },
+  { id: 'reef', name: 'Coral Reef Cup', diff: 'Medium', dc: 'd-med', tracks: [31, 32, 33, 34], trophy: { name: 'Pearl Shell', icon: '🐚' }, blurb: 'Kelp flumes, a sunken ship, jellyfish bumpers and the bubble tubes.' },
+  { id: 'haunted', name: 'Haunted Cup', diff: 'Hard', dc: 'd-hard', tracks: [35, 36, 37, 38], trophy: { name: 'Jack-o\'-Lantern', icon: '🎃' }, blurb: 'Graveyard planks, the pumpkin patch, a spooky mansion and the witch\'s vortex.' },
+  { id: 'cloud', name: 'Cloud Kingdom Cup', diff: 'Hard', dc: 'd-hard', tracks: [39, 40, 41, 42], trophy: { name: 'Rainbow Crown', icon: '🌈' }, blurb: 'A rainbow bridge, the sky castle, island leaps and a thunderhead spiral.' },
   { id: 'chaos', name: 'Chaos Cup', diff: 'Surprise', dc: 'd-rand', tracks: [7, 7, 7, 7], trophy: { name: 'Chaos Cube', icon: '🎲' }, blurb: 'Four random courses nobody has seen before.' },
 ];
 const CUP_PRIZE = [400, 250, 150];
@@ -978,12 +982,96 @@ const TRACKS = [
     palette: ['#62c4f2', '#6abf69', '#ffd166', '#3aa0e8'],
     segs: [...START(), ...SNAKE(4), WIDE(2.6), { len: 32, slope: -0.17, slalom: 4.5 }, WAVES(40, 0.16), ...BOWL(-1), CHUTE(14, -0.2, { boost: true }),
       ...SNAKE(3, 20), ...JUMP(6), WIDE(3), { len: 26, slope: -0.15, pops: 5 }, CURVE(1.5, 28), ...FINISH(1)] },
+  // ---- Toy Box Cup (Easy) ----
+  { id: 'blockbay', name: 'Building Block Bay', diff: 'Easy', dc: 'd-easy', seed: 401, theme: 'toybox',
+    blurb: 'Hop down giant toy-block stairs, swing round a play-mat bowl and dodge bouncing toy balls.',
+    palette: ['#ff4d4d', '#ffc531', '#3aa0ff', '#4fe07a'],
+    segs: [...START(), CURVE(1.4, 26), ...STAIRS(4, 0.85), ...BOWL(-1), WIDE(3), { len: 28, slope: -0.15, pops: 5 }, ...SNAKE(3),
+      CHUTE(14, -0.22, { boost: true }), ...JUMP(6), WIDE(2.6), { len: 30, slope: -0.16, slalom: 4.6 }, ...STAIRS(3, 0.8), CURVE(-1.5, 28), ...FINISH(1)] },
+  { id: 'crayon', name: 'Crayon Canyon', diff: 'Easy', dc: 'd-easy', seed: 409, theme: 'toybox',
+    blurb: 'Weave through a forest of giant crayons, ride the rainbow waves and leap the paint pots.',
+    palette: ['#b45cff', '#ff8a3c', '#4fe07a', '#3aa0ff'],
+    segs: [...START(), ...SNAKE(4), WIDE(2.6), { len: 34, slope: -0.17, slalom: 4.4 }, WAVES(40, 0.16), CURVE(-1.6, 28), ...JUMP(6),
+      WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...SNAKE(3, 18), WIDE(3), { len: 26, slope: -0.15, pops: 5 }, ...JUMP(7), ...FINISH(-1)] },
+  { id: 'trainset', name: 'Train Set Twist', diff: 'Easy', dc: 'd-easy', seed: 419, theme: 'toybox',
+    blurb: 'A toy railway: a spiral track tower, split lines with boost pads and a tunnel through the toy box.',
+    palette: ['#3aa0ff', '#ff4d4d', '#ffc531', '#2fbf8a'],
+    segs: [...START(), CURVE(1.5, 28), ...HELIX(1, 1), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, TUBE(36, { turn: -1.4, bank: 0.3 }),
+      WAVES(34, 0.14), ...BOWL(1), WIDE(3), { len: 28, slope: -0.14, sliders: 2 }, CURVE(-1.6, 28), ...JUMP(6), ...FINISH(1)] },
+  { id: 'bouncycastle', name: 'Bouncy Castle', diff: 'Easy', dc: 'd-easy', seed: 431, theme: 'toybox',
+    blurb: 'Boing! Bumper fields, bouncy waves, two big bowls and a jump over the castle moat.',
+    palette: ['#ff6fb5', '#ffc531', '#4fb4ff', '#7ed957'],
+    segs: [...START(), WIDE(3.2), { len: 30, slope: -0.14, bumpers: 6 }, WAVES(40, 0.2), ...BOWL(-1), CURVE(1.5, 26), WIDE(3), { len: 30, slope: -0.14, bumpers: 7 },
+      ...JUMP(7), ...BOWL(1, 1.2), ...SNAKE(3), WAVES(30, 0.18), ...FINISH(-1)] },
+  // ---- Coral Reef Cup (Medium) ----
+  { id: 'kelpflume', name: 'Kelp Forest Flume', diff: 'Medium', dc: 'd-med', seed: 443, theme: 'reef',
+    blurb: 'Slalom through swaying kelp, squelch across the seaweed beds and shoot the glass flumes.',
+    palette: ['#3fd0c8', '#ff7aa0', '#2fa07a', '#ffb347'],
+    segs: [...START(), ...SNAKE(3), WIDE(2.6), { len: 34, slope: -0.17, slalom: 4.2 }, TUBE(40, { turn: 1.6, bank: 0.3 }), ...MUD(26), CURVE(-1.6, 28),
+      ...CORKTUBE(1, 1), WIDE(3), { len: 28, slope: -0.14, sliders: 3 }, ...JUMP(8), WIDE(2.6), { len: 30, slope: -0.17, slalom: 4.2 }, ...FINISH(1)] },
+  { id: 'sunkenship', name: 'Sunken Ship', diff: 'Medium', dc: 'd-med', seed: 457, theme: 'reef',
+    blurb: 'Drop through the hold of a wreck: swinging masts, sliding cargo, the stairs below deck and a plank walk.',
+    palette: ['#8a5a3a', '#3fd0c8', '#c98a4a', '#2a7f9a'],
+    segs: [...START(), CURVE(-1.4, 26), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.4 }, ...STAIRS(4, 0.9), WIDE(3), { len: 30, slope: -0.13, sliders: 3 },
+      ...FREEFALL(), CURVE(1.6, 28), ...TIGHTROPE(26, 0.4), WIDE(3.2), { len: 22, slope: -0.12, sweeper: -2.6 }, ...JUMP(8), ...FINISH(-1)] },
+  { id: 'jellyfish', name: 'Jellyfish Jive', diff: 'Medium', dc: 'd-med', seed: 467, theme: 'reef',
+    blurb: 'Bounce off jellyfish bumpers, ride the ocean swell and duck the popping anemones.',
+    palette: ['#ff7aa0', '#b05cff', '#3fe0c8', '#ffd84d'],
+    segs: [...START(), WIDE(3.4), { len: 32, slope: -0.14, bumpers: 8 }, WAVES(42, 0.2), CURVE(1.5, 28), WIDE(3), { len: 28, slope: -0.15, pops: 4.6 },
+      ...BOWL(-1, 1.2), WIDE(3.4), { len: 30, slope: -0.14, bumpers: 8 }, ...JUMP(8), WAVES(34, 0.2), WIDE(3), { len: 26, slope: -0.15, pops: 4.6 }, ...FINISH(1)] },
+  { id: 'bubbletube', name: 'Bubble Tube Express', diff: 'Medium', dc: 'd-med', seed: 479, theme: 'reef',
+    blurb: 'A rush through corkscrew glass tubes, a whirlpool vortex and boost currents to the finish.',
+    palette: ['#4fb4ff', '#3fe0c8', '#7a6bff', '#ff7aa0'],
+    segs: [...START(), ...CORKTUBE(-1, 1.25), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...SNAKE(3), ...VORTEX(1), CURVE(-1.4, 26),
+      TUBE(40, { turn: 1.5, bank: 0.3 }), WIDE(3.2), { len: 30, slope: -0.13, spinners: 2 }, CHUTE(14, -0.22, { boost: true }), ...FINISH(-1)] },
+  // ---- Haunted Cup (Hard) ----
+  { id: 'graveyard', name: 'Graveyard Gallop', diff: 'Hard', dc: 'd-hard', seed: 491, theme: 'haunted',
+    blurb: 'Creaky planks over open graves, the reaper\'s swinging scythe and crypt gates that slam shut.',
+    palette: ['#6a3a9a', '#ff8a1e', '#4a2a6a', '#8a5ab8'],
+    segs: [...START(), CURVE(1.5, 26), ...TIGHTROPE(28, 0.5), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.8 }, WIDE(3), { len: 30, slope: -0.15, gates: 6.5 },
+      HAIRPIN(-1), ...OPEN(30, { pegs: 5.5 }), ...JUMP(9, 0.14), WIDE(3.2), { len: 22, slope: -0.12, sweeper: -3 }, ...BOTTLENECK(), ...FINISH(1)] },
+  { id: 'pumpkinpatch', name: 'Pumpkin Patch Panic', diff: 'Hard', dc: 'd-hard', seed: 503, theme: 'haunted',
+    blurb: 'Pumpkins pop up everywhere, sticky bog, rolling gourds and two jumps over the patch.',
+    palette: ['#ff8a1e', '#5a3a7a', '#ffb347', '#3a2a4a'],
+    segs: [...START(), WIDE(3), { len: 30, slope: -0.15, pops: 4.2 }, ...MUD(26), CURVE(-1.6, 28), WIDE(3), { len: 30, slope: -0.13, sliders: 4 }, ...JUMP(10, 0.15),
+      ...SNAKE(4, 16), WIDE(3), { len: 28, slope: -0.15, pops: 4.2 }, ...OPEN(28, { sliders: 2 }), ...JUMP(9, 0.14), ...FINISH(-1)] },
+  { id: 'mansion', name: 'Spooky Mansion', diff: 'Hard', dc: 'd-hard', seed: 517, theme: 'haunted',
+    blurb: 'Tumble down the grand staircase, through a trapdoor, past spinning chandeliers and out the narrow hall.',
+    palette: ['#8a5ab8', '#2a1e3a', '#c98aff', '#5a4a6a'],
+    segs: [...START(), ...STAIRS(5, 0.9), WIDE(3.2), { len: 32, slope: -0.13, spinners: 3 }, ...FREEFALL(), ...BOTTLENECK(), CURVE(1.7, 28), ...TIGHTROPE(30, -0.4),
+      ...STAIRS(4, 0.95), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...FREEFALL(), ...FINISH(1)] },
+  { id: 'witchvortex', name: 'Witch\'s Vortex', diff: 'Hard', dc: 'd-hard', seed: 529, theme: 'haunted',
+    blurb: 'Hairpins down the haunted hill, a wall-less broomstick run and the witch\'s three-ring vortex.',
+    palette: ['#4fe07a', '#6a3a9a', '#9dff6a', '#2a1e3a'],
+    segs: [...START(), HAIRPIN(1), HAIRPIN(-1), ...OPEN(32, { turn: 0.6 }), ...JUMP(10, 0.15), ...VORTEX(-1), WIDE(3.2), { len: 30, slope: -0.13, spinners: 3 },
+      ...TIGHTROPE(26, 0.5), HAIRPIN(1), ...JUMP(9, 0.14), ...FINISH(-1)] },
+  // ---- Cloud Kingdom Cup (Hard) ----
+  { id: 'rainbowbridge', name: 'Rainbow Bridge', diff: 'Hard', dc: 'd-hard', seed: 541, theme: 'cloudland',
+    blurb: 'Ride a wall-less rainbow across the sky, hop between cloud islands and thread the narrow arch.',
+    palette: ['#ff5a5a', '#ffd84d', '#4fb4ff', '#8a6bff'],
+    segs: [...START(), CURVE(1.4, 26), ...OPEN(34, { turn: 0.8 }), ...JUMP(10, 0.15), ...TIGHTROPE(30, -0.5), WAVES(36, 0.18), ...JUMP(11, 0.16, 3),
+      ...OPEN(30, { pegs: 6 }), ...BOTTLENECK(), CURVE(-1.5, 28), ...FINISH(1)] },
+  { id: 'cloudcastle', name: 'Castle in the Clouds', diff: 'Hard', dc: 'd-hard', seed: 553, theme: 'cloudland',
+    blurb: 'Storm the sky castle: drawbridge gates, the tower spiral, swinging banners and the royal bowl.',
+    palette: ['#ffb3d9', '#b3d1ff', '#fff0a8', '#c9b3ff'],
+    segs: [...START(), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...HELIX(2, -1), WIDE(3.2), { len: 22, slope: -0.12, sweeper: 2.6 }, ...BOWL(1, 1.3),
+      ...TIGHTROPE(28, 0.4), WIDE(3), { len: 30, slope: -0.15, gates: 6.5 }, ...JUMP(9, 0.14), WIDE(3.2), { len: 22, slope: -0.12, sweeper: -2.8 }, ...FINISH(-1)] },
+  { id: 'islandhop', name: 'Sky Island Hop', diff: 'Hard', dc: 'd-hard', seed: 563, theme: 'cloudland',
+    blurb: 'Five big leaps between floating islands, a freefall through the clouds and a sliding cloud lane.',
+    palette: ['#7ed957', '#ffb3d9', '#4fb4ff', '#ffd84d'],
+    segs: [...START(), CURVE(-1.3, 24), ...JUMP(10, 0.15), ...JUMP(11, 0.16, 3), CURVE(1.6, 28), ...FREEFALL(), WIDE(3), { len: 28, slope: -0.13, sliders: 3 },
+      ...JUMP(10, 0.15), ...SNAKE(3), ...JUMP(12, 0.16, 3), ...OPEN(28), ...JUMP(9, 0.14), ...FINISH(1)] },
+  { id: 'thunderhead', name: 'Thunderhead Spiral', diff: 'Hard', dc: 'd-hard', seed: 577, theme: 'cloudland',
+    blurb: 'Spin down a storm cloud: a double helix, lightning spinners, the vortex and a final rainbow dash.',
+    palette: ['#8a6bff', '#4fb4ff', '#ffd84d', '#ff6fb5'],
+    segs: [...START(), ...HELIX(2, 1), WIDE(3.2), { len: 32, slope: -0.13, spinners: 3 }, ...JUMP(10, 0.15), ...VORTEX(-1), WIDE(3), { len: 30, slope: -0.13, sliders: 3 },
+      ...TIGHTROPE(26, 0.5), WIDE(2.8), { len: 30, slope: -0.14, divider: true, boost: true }, ...JUMP(9, 0.14), ...FINISH(-1)] },
 ];
 
 // builds a fresh downhill course from random building blocks
 const PALETTES = [['#e8a33c', '#d9762b', '#f0c66b', '#c95f2a'], ['#3aa0e8', '#2c6fd1', '#62c4f2', '#4b55c9'], ['#d0604a', '#a8473a', '#e48a5e', '#8c3b4a'],
   ['#6abf69', '#3f9b5a', '#a3d977', '#2f7d6d'], ['#ff5fa2', '#7b5cff', '#ffb02e', '#2ec4b6'], ['#bfe9ff', '#8fd0f5', '#e4f6ff', '#9fb8ff']];
-const RANDOM_THEMES = ['forest', 'alpine', 'desert', 'snow', 'neon', 'sunset', 'volcano', 'candy', 'space', 'jungle', 'beach'];
+const RANDOM_THEMES = ['forest', 'alpine', 'desert', 'snow', 'neon', 'sunset', 'volcano', 'candy', 'space', 'jungle', 'beach', 'toybox', 'haunted', 'reef', 'cloudland'];
 function randomCourse(seed) {
   const r = rng(seed), pick = a => a[Math.floor(r() * a.length)];
   const segs = START();
@@ -1413,11 +1501,23 @@ const THEMES = {
   space: { sky: ['#000005', '#0a0a2a', '#1a1040'], fog: '#0a0a24', ground: '#16162a', hemi: ['#a0b0ff', '#101020', 0.65], sun: ['#e0e8ff', 0.9], trees: 'crystal', leaf: '#6be0ff', clouds: null, hills: 'peaks', hill: '#3a3a5a', stars: true, glow: true },
   jungle: { sky: ['#2f8a6a', '#a8e0b0', '#e8f8e0'], fog: '#a8d8a8', ground: '#4f8a3a', hemi: ['#e0ffd8', '#2a5a2a', 0.8], sun: ['#fff8d0', 1.0], trees: 'round', leaf: '#1f6a2a', clouds: '#ffffff', hills: 'hills', hill: '#3a7a3a' },
   beach: { sky: ['#1f96ff', '#9ae0ff', '#fff4d8'], fog: '#bfe8ff', ground: '#f2dca0', hemi: ['#ffffff', '#c0a060', 0.85], sun: ['#fff4e0', 1.15], trees: 'palm', leaf: '#2f9a4a', clouds: '#ffffff', hills: 'mesas', hill: '#e8c88a' },
+  // a playroom floor: giant toy blocks on the horizon, crayons standing in for trees
+  toybox: { sky: ['#4aa8ff', '#bfe6ff', '#fff6e0'], fog: '#cfe9ff', ground: '#3f7fd6', hemi: ['#ffffff', '#8a7aa0', 0.9], sun: ['#fff6e8', 1.05], trees: 'crayon', treeScale: 2.2, leaf: '#ff4d4d',
+    leafs: ['#ff4d4d', '#ffc531', '#3aa0ff', '#4fe07a', '#b45cff', '#ff8a3c'], clouds: '#ffffff', hills: 'blocks', hill: '#ff6b6b' },
+  // a full moon over a haunted hollow: bare trees, glowing pumpkins, will-o'-the-wisps
+  haunted: { sky: ['#07031a', '#2e1450', '#5e3070'], fog: '#2a1640', ground: '#1d1828', hemi: ['#b8a8ff', '#1a1020', 0.6], sun: ['#c8d8ff', 0.75], trees: 'spooky', treeScale: 2, treeN: 200, leaf: '#2b2333',
+    clouds: '#4a3a5a', hills: 'peaks', hill: '#1a1228', stars: true, glow: true, rim: '#9dff6a', moon: '#fff1c0', wisps: '#9dff8a' },
+  // under the sea: coral and kelp on the sand, bubbles rising, the haze closes in
+  reef: { sky: ['#02203c', '#0a5f86', '#43c4cc'], fog: '#127a92', fogNear: 50, fogFar: 230, ground: '#e6d39c', hemi: ['#bff6ff', '#2a6a6a', 0.85], sun: ['#d8fbff', 0.95], trees: 'coral', treeScale: 2.4, treeN: 220, leaf: '#ff6f91',
+    leafs: ['#ff6f91', '#ffb347', '#b05cff', '#ff4d6d', '#3fe0c8', '#ffd84d'], clouds: null, hills: 'hills', hill: '#0b3f52', bubbles: true },
+  // high above a sea of cloud: floating islands with castle towers, a rainbow across the sky
+  cloudland: { sky: ['#5fb2ff', '#ffd6f0', '#fff8ff'], fog: '#ffe6f4', ground: '#f6efff', hemi: ['#ffffff', '#c8b0e0', 0.95], sun: ['#fffaf0', 1.05], trees: 'puff', treeScale: 4.5, treeN: 260, leaf: '#ffffff',
+    clouds: '#ffffff', hills: 'islands', hill: '#8a7a9a', rainbow: true },
 };
 let weather = null;   // falling snow, follows the camera
-function applyTheme(th, box, groundY) {
+function applyTheme(th, box, groundY, dir) {
   sky.material.uniforms.top.value.set(th.sky[0]); sky.material.uniforms.mid.value.set(th.sky[1]); sky.material.uniforms.bot.value.set(th.sky[2]);
-  scene.background.set(th.fog); scene.fog.color.set(th.fog);
+  scene.background.set(th.fog); scene.fog.color.set(th.fog); scene.fog.near = th.fogNear || 90; scene.fog.far = th.fogFar || 260;
   hemi.color.set(th.hemi[0]); hemi.groundColor.set(th.hemi[1]); hemi.intensity = th.hemi[2];
   sun.color.set(th.sun[0]); sun.intensity = th.sun[1];
   clouds.visible = !!th.clouds;
@@ -1436,10 +1536,22 @@ function applyTheme(th, box, groundY) {
     for (let k = 0; k < 22; k++) {
       const a = k / 22 * TAU + hr() * 0.2, d = rad + hr() * 120, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
       let m;
-      if (th.hills === 'mesas') { const h = 25 + hr() * 45; m = new THREE.Mesh(new THREE.CylinderGeometry(18 + hr() * 20, 30 + hr() * 20, h, 7), mat); m.position.set(x, groundY + h / 2, z); }
+      if (th.hills === 'blocks') {   // stacks of giant toy blocks
+        m = new THREE.Group(); let y = groundY; const n = 1 + Math.floor(hr() * 3);
+        for (let q = 0; q < n; q++) { const sz = (28 - q * 6) * (0.7 + hr() * 0.5), bm = new THREE.MeshStandardMaterial({ color: haze(th.leafs[Math.floor(hr() * th.leafs.length)], 0.3), roughness: 0.6, fog: false });
+          const b = new THREE.Mesh(new THREE.BoxGeometry(sz, sz, sz), bm); b.position.set((hr() - 0.5) * 6, y - groundY + sz / 2, (hr() - 0.5) * 6); b.rotation.y = hr() * 0.8; m.add(b); y += sz; }
+        m.position.set(x, groundY, z);
+      } else if (th.hills === 'islands') {   // rocks floating over the cloud sea, some with a castle tower
+        m = new THREE.Group(); const r = 14 + hr() * 18;
+        const rock = new THREE.Mesh(new THREE.ConeGeometry(r, r * 1.6, 7), mat); rock.rotation.x = Math.PI; rock.position.y = -r * 0.8; m.add(rock);
+        const top = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.02, r, 3, 7), new THREE.MeshStandardMaterial({ color: haze('#7ed957', 0.3), roughness: 1, flatShading: true, fog: false })); top.position.y = 1.5; m.add(top);
+        if (hr() < 0.6) { const tw = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.4, 22, 10), new THREE.MeshStandardMaterial({ color: haze('#fff4fa', 0.2), roughness: 0.8, fog: false })); tw.position.y = 14; m.add(tw);
+          const roof = new THREE.Mesh(new THREE.ConeGeometry(4.4, 9, 10), new THREE.MeshStandardMaterial({ color: haze(['#ff6fa8', '#7b8cff', '#ffb347'][Math.floor(hr() * 3)], 0.2), roughness: 0.6, fog: false })); roof.position.y = 29.5; m.add(roof); }
+        m.position.set(x, groundY + 25 + hr() * 90, z);
+      } else if (th.hills === 'mesas') { const h = 25 + hr() * 45; m = new THREE.Mesh(new THREE.CylinderGeometry(18 + hr() * 20, 30 + hr() * 20, h, 7), mat); m.position.set(x, groundY + h / 2, z); }
       else if (th.hills === 'peaks') {
         const h = 80 + hr() * 90, r = h * (0.55 + hr() * 0.2); m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), mat); m.position.set(x, groundY + h / 2 - 2, z);
-        const c = new THREE.Mesh(new THREE.ConeGeometry(r * 0.32, h * 0.32, 7), cap); c.position.y = h * 0.34 + 0.5; m.add(c);
+        if (!th.moon) { const c = new THREE.Mesh(new THREE.ConeGeometry(r * 0.32, h * 0.32, 7), cap); c.position.y = h * 0.34 + 0.5; m.add(c); }
       } else { const h = 30 + hr() * 40; m = new THREE.Mesh(new THREE.SphereGeometry(h, 12, 8), mat); m.scale.set(1.6, 0.7, 1.6); m.position.set(x, groundY - h * 0.15, z); }
       m.rotation.y = hr() * TAU; trackGroup.add(m);
     }
@@ -1451,7 +1563,30 @@ function applyTheme(th, box, groundY) {
     const st = new THREE.Points(g, new THREE.PointsMaterial({ color: '#ffffff', size: 1.6, sizeAttenuation: false, fog: false }));
     st.userData.followCam = true; trackGroup.add(st);
   }
+  if (th.moon) {   // stays put in the sky, like the stars
+    const g = new THREE.Group(); g.userData.followCam = true;
+    const d = dir || new V3(0, 0, -1), moon = new THREE.Mesh(new THREE.SphereGeometry(26, 32, 16), new THREE.MeshBasicMaterial({ color: th.moon, fog: false }));
+    moon.position.set(d.x * 330 - d.z * 70, 95, d.z * 330 + d.x * 70); moon.scale.setScalar(1.5); g.add(moon);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: th.moon, transparent: true, opacity: 0.55, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })); halo.scale.setScalar(150); halo.position.copy(moon.position); g.add(halo);
+    trackGroup.add(g);
+  }
+  if (th.rainbow) {
+    const g = new THREE.Group(); g.userData.followCam = true;
+    ['#ff5a5a', '#ff9f43', '#ffd84d', '#5ee07a', '#4fb4ff', '#8a6bff'].forEach((c, k) => {
+      const arc = new THREE.Mesh(new THREE.TorusGeometry(300 - k * 9, 4.6, 6, 64, Math.PI), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.55, fog: false, depthWrite: false })); arc.position.set(0, -60, -380); g.add(arc);
+    });
+    if (dir) g.rotation.y = Math.atan2(-dir.x, -dir.z);
+    trackGroup.add(g);
+  }
   weather = null;
+  if (th.bubbles || th.wisps) {   // bubbles and wisps drift upwards around the camera
+    const n = th.bubbles ? 500 : 260, pos = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) pos.set([(hr() - 0.5) * 80, hr() * 40, (hr() - 0.5) * 80], k * 3);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    weather = new THREE.Points(g, new THREE.PointsMaterial(th.bubbles ? { color: '#e6fbff', size: 0.26, map: dotTex, transparent: true, opacity: 0.75, depthWrite: false }
+      : { color: th.wisps, size: 0.55, map: dotTex, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+    weather.userData.v = th.bubbles ? -2.4 : -0.7; trackGroup.add(weather);
+  }
   if (th.snow) {
     const n = 900, pos = new Float32Array(n * 3);
     for (let k = 0; k < n; k++) pos.set([(hr() - 0.5) * 80, hr() * 40, (hr() - 0.5) * 80], k * 3);
@@ -1475,7 +1610,7 @@ function buildScene(track) {
   const th = THEMES[track.def.theme] || THEMES.forest;
   const trackMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.0, clearcoat: 0.6, clearcoatRoughness: 0.25, side: THREE.DoubleSide });
   const shellMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, side: THREE.DoubleSide });
-  const rimMat = th.glow ? new THREE.MeshStandardMaterial({ color: '#7dfcff', emissive: '#39f5ff', emissiveIntensity: 1.2, roughness: 0.3 })
+  const rimMat = th.glow ? new THREE.MeshStandardMaterial({ color: th.rim || '#7dfcff', emissive: th.rim || '#39f5ff', emissiveIntensity: 1.2, roughness: 0.3 })
     : new THREE.MeshStandardMaterial({ color: '#fbf7ef', roughness: 0.35 });
   const divMat = new THREE.MeshStandardMaterial({ color: '#fbf7ef', roughness: 0.4 });
   const boostMat = new THREE.MeshBasicMaterial({ color: '#7dfcff', transparent: true, opacity: 0.85, side: THREE.DoubleSide });
@@ -1620,7 +1755,7 @@ function buildScene(track) {
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(gsize, gsize), new THREE.MeshStandardMaterial({ color: th.ground, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2; ground.position.set((box.min.x + box.max.x) / 2, groundY, (box.min.z + box.max.z) / 2);
   ground.receiveShadow = true; trackGroup.add(ground);
-  applyTheme(th, box, groundY);
+  applyTheme(th, box, groundY, new V3().subVectors(S[S.length - 1].p, S[0].p).setY(0).normalize());
   // glass tunnels: a clear dome over the channel with hoops every few metres
   const glassMat = new THREE.MeshPhysicalMaterial({ color: th.glow ? '#b18cff' : '#cdefff', transparent: true, opacity: 0.28, roughness: 0.05, metalness: 0, side: THREE.DoubleSide, depthWrite: false });
   const hoopMat = th.glow ? rimMat : new THREE.MeshStandardMaterial({ color: '#dfe8f0', metalness: 0.5, roughness: 0.3 });
@@ -1707,12 +1842,13 @@ function buildScene(track) {
   // trees on the ground, away from the track
   const trand = rng(track.def.seed * 7);
   const trees = [];
-  for (let n = 0; n < 900 && trees.length < 160; n++) {
+  const tsc = th.treeScale || 1, tn = th.treeN || 160;
+  for (let n = 0; n < 900 && trees.length < tn; n++) {
     const x = box.min.x - 60 + trand() * (box.max.x - box.min.x + 120);
     const z = box.min.z - 60 + trand() * (box.max.z - box.min.z + 120);
     let ok = true;
     for (let q = 0; q < S.length; q += 3) { const p = S[q].p; if (Math.hypot(p.x - x, p.z - z) < 7 && p.y - groundY < 14) { ok = false; break; } }
-    if (ok) trees.push([x, z, 0.7 + trand() * 0.8]);
+    if (ok) trees.push([x, z, (0.7 + trand() * 0.8) * tsc]);
   }
   const dm = new THREE.Object3D();
   // each tree style is a list of instanced parts: [geometry, colour, y offset, x offset]
@@ -1725,12 +1861,24 @@ function buildScene(track) {
     rock: [[new THREE.DodecahedronGeometry(1.4, 0), th.leaf, 0.7, 0], [new THREE.DodecahedronGeometry(0.8, 0), th.leaf, 0.4, 1.4]],
     lolly: [[new THREE.CylinderGeometry(0.12, 0.12, 3, 6), '#ffffff', 1.5, 0], [new THREE.SphereGeometry(1.2, 14, 10), th.leaf, 3.6, 0]],
     crystal: [[new THREE.OctahedronGeometry(1.3, 0), th.leaf, 1.6, 0], [new THREE.OctahedronGeometry(0.7, 0), th.leaf, 0.8, 1.2]],
+    // 'multi' parts take a colour per tree from th.leafs; a fifth entry makes the part glow
+    crayon: [[new THREE.CylinderGeometry(0.42, 0.42, 4.6, 8), 'multi', 2.3, 0], [new THREE.CylinderGeometry(0.44, 0.44, 0.5, 8), '#2a2a3a', 3.6, 0], [new THREE.ConeGeometry(0.42, 1.1, 8), '#f2d2a0', 5.15, 0],
+      [new THREE.ConeGeometry(0.16, 0.42, 8), 'multi', 5.55, 0], [new THREE.BoxGeometry(1.5, 1.5, 1.5), 'multi', 0.75, 2.2]],
+    spooky: [[new THREE.CylinderGeometry(0.22, 0.42, 5, 6), '#2b2333', 2.5, 0], [new THREE.CylinderGeometry(0.12, 0.24, 2.8, 5).rotateZ(0.9), '#2b2333', 4.2, 0.95],
+      [new THREE.CylinderGeometry(0.1, 0.2, 2.3, 5).rotateZ(-1.0), '#2b2333', 3.6, -0.8], [new THREE.SphereGeometry(0.9, 12, 8).scale(1, 0.75, 1), '#ff8a1e', 0.66, 1.9, 0.6],
+      [new THREE.CylinderGeometry(0.08, 0.1, 0.4, 5), '#3f6a2a', 1.4, 1.9]],
+    coral: [[new THREE.CylinderGeometry(0.14, 0.3, 2.6, 6).rotateZ(0.5), 'multi', 1.2, 0.35], [new THREE.CylinderGeometry(0.12, 0.26, 2.2, 6).rotateZ(-0.6), 'multi', 1.1, -0.35],
+      [new THREE.CylinderGeometry(0.12, 0.2, 2.8, 6), 'multi', 1.4, 0], [new THREE.SphereGeometry(0.9, 10, 8).scale(1, 0.7, 1), 'multi', 0.5, 1.8],
+      [new THREE.ConeGeometry(0.28, 7, 5), '#2f9a5a', 3.5, -1.6], [new THREE.ConeGeometry(0.22, 5, 5), '#3fb86a', 2.5, -2.1]],
+    puff: [[new THREE.SphereGeometry(1.8, 12, 8), '#ffffff', 0.6, 0], [new THREE.SphereGeometry(1.3, 12, 8), '#fff4fa', 0.5, 1.9], [new THREE.SphereGeometry(1.2, 12, 8), '#f4f0ff', 0.4, -1.7]],
     none: [],
   };
   const parts = STYLES[th.trees] || STYLES.pine;
-  for (const [geo, col, yo, xo] of parts) {
-    const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, flatShading: th.trees === 'round' || th.trees === 'rock' || th.trees === 'crystal', emissive: th.trees === 'crystal' ? th.leaf : '#000000', emissiveIntensity: th.trees === 'crystal' ? 0.5 : 0 }), trees.length);
-    trees.forEach(([x, z, sc], k) => { dm.position.set(x + xo * sc, groundY + yo * sc, z); dm.scale.setScalar(sc); dm.updateMatrix(); inst.setMatrixAt(k, dm.matrix); });
+  for (const [geo, col, yo, xo, glow] of parts) {
+    const multi = col === 'multi', c0 = multi ? '#ffffff' : col;
+    const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: c0, roughness: 0.9, flatShading: th.trees === 'round' || th.trees === 'rock' || th.trees === 'crystal', emissive: th.trees === 'crystal' ? th.leaf : glow ? col : '#000000', emissiveIntensity: th.trees === 'crystal' ? 0.5 : glow || 0 }), trees.length);
+    const tc = new THREE.Color();
+    trees.forEach(([x, z, sc], k) => { dm.position.set(x + xo * sc, groundY + yo * sc, z); dm.scale.setScalar(sc); dm.updateMatrix(); inst.setMatrixAt(k, dm.matrix); if (multi) inst.setColorAt(k, tc.set(th.leafs[k % th.leafs.length])); });
     inst.castShadow = true; trackGroup.add(inst);
   }
   scene.add(trackGroup);
@@ -2463,7 +2611,8 @@ function cupTrophyHtml(c) {
 }
 const THEME_ART = { forest: ['🌲', '#3fbf6a', '#1d6b3e'], alpine: ['🏔️', '#8fc6ff', '#3a64b8'], beach: ['🏖️', '#ffe08a', '#2bb3c8'], candy: ['🍭', '#ff9ad5', '#b15cff'],
   dark: ['🦇', '#5a4a8a', '#140f2a'], desert: ['🏜️', '#ffc27a', '#d1602d'], jungle: ['🌴', '#7ed957', '#1f7a4a'], neon: ['🕹️', '#ff4fd8', '#3a1a9a'], snow: ['❄️', '#e6f6ff', '#6aa8e0'],
-  space: ['🪐', '#6a5cff', '#120c3a'], sunset: ['🌅', '#ffb347', '#e0457b'], volcano: ['🌋', '#ff7a2f', '#6b1010'] };
+  space: ['🪐', '#6a5cff', '#120c3a'], sunset: ['🌅', '#ffb347', '#e0457b'], volcano: ['🌋', '#ff7a2f', '#6b1010'],
+  toybox: ['🧸', '#ffd84d', '#ff6b6b'], haunted: ['🎃', '#7a3aaa', '#1a0f2e'], reef: ['🐠', '#3fe0c8', '#0a5f86'], cloudland: ['🏰', '#ffd6f0', '#8ab8ff'] };
 const trackArt = t => t.random ? ['🎲', '#9a8cff', '#4b33b8'] : t.arena ? ['🌀', '#ff5fb0', '#5b2bd1'] : THEME_ART[t.theme] || ['🏁', '#6a7bd8', '#2a3470'];
 let diffFilter = store.get('diffFilter') || 'All';
 function trackLength(def) { return def.arena ? '' : def.random ? '~950 m' : Math.round(def.segs.reduce((a, s) => a + s.len, 0)) + ' m'; }
@@ -4203,6 +4352,7 @@ let spiralCam = 0, camLiftS = 0;   // 0..1 blend into the spiral camera, which r
 function frame(now) {
   const dt = window.__fixedDt || Math.min(0.05, (now - last) / 1000); last = now;   // __fixedDt: steady steps for recording clips
   if (track) { updateCelebration(dt); update(dt * slowMo); }
+  if (window.__cam) window.__cam(camera, track);   // test hook: preview shots pick their own camera
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -4359,7 +4509,8 @@ function update(dt) {
   for (const o of trackGroup.children) if (o.userData.followCam) o.position.copy(camera.position);
   if (weather) {
     const P = weather.geometry.attributes.position, arr = P.array;
-    for (let k = 1; k < arr.length; k += 3) { arr[k] -= dt * 3.2; if (arr[k] < -12) arr[k] += 40; }
+    const v = weather.userData.v || 3.2;
+    for (let k = 1; k < arr.length; k += 3) { arr[k] -= dt * v; if (arr[k] < -12) arr[k] += 40; else if (arr[k] > 28) arr[k] -= 40; }
     P.needsUpdate = true; weather.position.set(Math.round(camera.position.x / 80) * 80, camera.position.y - 14, Math.round(camera.position.z / 80) * 80);
   }
   for (const c of clouds.children) { c.position.x += c.userData.v * dt; if (c.position.x - camera.position.x > 300) c.position.x -= 600; }
