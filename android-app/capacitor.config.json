@@ -15,5 +15,11 @@
       "style": "DARK",
       "initialViewportFitValueHint": "cover"
     }
+  },
+  "ios": {
+    "includePlugins": [
+      "@capacitor-community/admob",
+      "cordova-plugin-purchase"
+    ]
   }
 }
