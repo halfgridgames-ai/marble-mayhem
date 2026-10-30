@@ -3264,12 +3264,12 @@ function raceMode() { return net ? 'online' : gp ? 'grand_prix' : 'single'; }
 // In the Android and iPhone apps this talks to AdMob and Google Play Billing / the App Store. Everywhere else it runs
 // in test mode: ads are a short stand-in card and purchases are free test purchases, so every flow can be tried.
 // Real AdMob ad units for Marble Mayhem on Android (AdMob app id is in android-app/android/app/src/main/AndroidManifest.xml).
-// iPhone uses Google's test ids until an iOS app is added in AdMob (its app id goes in android-app/ios/App/App/Info.plist).
+// iPhone has its own AdMob app (its app id is in android-app/ios/App/App/Info.plist).
 const PLATFORM = (window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform()) || 'web';
 const AD_UNITS = PLATFORM === 'ios'
-  ? { rewarded: 'ca-app-pub-3940256099942544/1712485313', interstitial: 'ca-app-pub-3940256099942544/4411468910' }
+  ? { rewarded: 'ca-app-pub-4390358547833612/6910986646', interstitial: 'ca-app-pub-4390358547833612/2369106405' }
   : { rewarded: 'ca-app-pub-4390358547833612/3554836195', interstitial: 'ca-app-pub-4390358547833612/4616636422' };
-const AD_TESTING = PLATFORM === 'ios';  // Android has real ids; set false for iPhone once its real ids are in
+const AD_TESTING = false;
 // Product ids must match the in-app products created in Play Console and App Store Connect. Prices shown here are
 // fallbacks; the app shows the store's local price once it has loaded.
 const PRODUCTS = [
