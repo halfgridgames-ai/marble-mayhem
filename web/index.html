@@ -3974,8 +3974,17 @@ const sfx = (() => {
   let ctx = null, master, sfxGain, musicGain, noise, roll = null;
   const prefs = { music: store.get('music') ?? true, sound: store.get('sound') ?? true };
   const last = {};
+  // Silence everything while an ad plays or the app is in the background (home button, app switcher, screen off).
+  let ducked = false, away = false;
+  function apply() { if (!ctx) return; if (ducked || away) ctx.suspend(); else ctx.resume(); }
+  function setAway(on) { away = on; apply(); }
+  document.addEventListener('visibilitychange', () => setAway(document.hidden));
+  document.addEventListener('pause', () => setAway(true));     // Capacitor app going to the background
+  document.addEventListener('resume', () => setAway(document.hidden));
+  addEventListener('pagehide', () => setAway(true));
+  addEventListener('pageshow', () => setAway(document.hidden));
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { if (ctx.state === 'suspended' && !ducked && !away) ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     try { ctx = new AC({ latencyHint: 'balanced' }); } catch (e) { try { ctx = new AC(); } catch (e2) { return; } }
     master = ctx.createGain(); master.gain.value = 0.9;
@@ -4008,7 +4017,7 @@ const sfx = (() => {
   }
   return {
     init, prefs, tone, burst,
-    duck(on) { if (ctx) on ? ctx.suspend() : ctx.resume(); },   // silence the game while a video ad plays
+    duck(on) { ducked = on; apply(); },   // silence the game while a video ad plays
     get ctx() { return ctx; }, get musicBus() { return musicGain; },
     setMusic(on) { prefs.music = on; store.set('music', on); if (musicGain) musicGain.gain.setTargetAtTime(on ? 0.34 : 0, ctx.currentTime, 0.2); },
     setSound(on) { prefs.sound = on; store.set('sound', on); if (sfxGain) sfxGain.gain.setTargetAtTime(on ? 0.8 : 0, ctx.currentTime, 0.05); },
