@@ -3290,7 +3290,7 @@ const money = {
   noAds: !!store.get('noads'),
   granted: store.get('tx') || [],          // transaction ids already paid out, so nothing is granted twice
   ads: store.get('ads') || { day: '', n: 0, lastShop: 0 },
-  racesSinceAd: 0, lastInterstitial: 0, sessionRaces: 0, busy: false,
+  racesSinceAd: 0, lastInterstitial: 0, sessionRaces: 0, busy: false, adFailed: false,
   adMob: null, billing: null,
   rewardsLeft() { if (this.ads.day !== today()) { this.ads = { day: today(), n: 0, lastShop: 0 }; } return REWARD.dailyCap - this.ads.n; },
   noteReward() { this.rewardsLeft(); this.ads.n++; store.set('ads', this.ads); },
@@ -3315,9 +3315,9 @@ const money = {
       try {
         subs.push(await this.adMob.addListener('onRewardedVideoAdReward', () => { earned = true; }));
         subs.push(await this.adMob.addListener('onRewardedVideoAdDismissed', () => done(earned)));
-        subs.push(await this.adMob.addListener('onRewardedVideoAdFailedToShow', () => done(false)));
-        this.adMob.showRewardVideoAd().catch(() => done(false));
-      } catch (e) { done(false); }
+        subs.push(await this.adMob.addListener('onRewardedVideoAdFailedToShow', () => { this.adFailed = true; done(false); }));
+        this.adMob.showRewardVideoAd().catch(() => { this.adFailed = true; done(false); });
+      } catch (e) { this.adFailed = true; done(false); }
     });
   },
   nativeInterstitial() {
@@ -3336,13 +3336,13 @@ const money = {
   // resolves true only if the player watched to the end and earned the reward
   async showRewarded() {
     if (this.busy || this.rewardsLeft() <= 0) return false;
-    this.busy = true; sfx.duck(true);
+    this.busy = true; this.adFailed = false; sfx.duck(true);
     let ok = false;
     try {
       if (this.native && this.adMob) { ok = await this.nativeRewarded(); this.prepRewarded(); }
-      else if (this.native) ok = false;
+      else if (this.native) { ok = false; this.adFailed = true; }
       else ok = await testAd(5);
-    } catch (e) { ok = false; this.prepRewarded(); }
+    } catch (e) { ok = false; this.adFailed = true; this.prepRewarded(); }
     this.busy = false; sfx.duck(false);
     if (ok) { this.noteReward(); trackEvent('rewarded_ad_watched'); }
     return ok;
@@ -3427,23 +3427,26 @@ function renderStore() {
       ${owned ? '<button class="buy" disabled>Owned</button>' : `<button class="buy cash" data-iap="${p.id}">${money.price(p)}</button>`}</div>`;
   }).join('');
 }
+// shop notes appear at the top of the shop, so bring them into view or a tap looks like it did nothing
+function shopSay(t) { const m = $('shopMsg'); m.textContent = t; if (t) try { m.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
+const NO_AD = 'No ad is ready right now. Try again in a minute.';
 $('shop').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
-  if (b.dataset.iap) { b.disabled = true; const err = await money.buy(findProduct(b.dataset.iap)); if (err) $('shopMsg').textContent = err; renderShop(); }
+  if (b.dataset.iap) { b.disabled = true; const err = await money.buy(findProduct(b.dataset.iap)); renderShop(); if (err) shopSay(err); return; }
   else if (b.dataset.boxad) {
     if (await money.showRewarded()) { store.set('freebox', Date.now() / 1000); revealBox(openBox()); }
-    renderShop();
+    renderShop(); if (money.adFailed) shopSay(NO_AD);
   } else if (b.dataset.try) {
     if (await money.showRewarded()) {
       const d = findMarble(b.dataset.try); trial = { prev: trial ? trial.prev : selMarble, used: false }; selMarble = d.id;
       $('shop').hidden = true; $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles();
       toast(''); $('menuTrial').textContent = `Trying ${d.name} for one race. Press Race!`; return;
     }
-    renderShop();
+    renderShop(); if (money.adFailed) shopSay(NO_AD);
   } else if (b.dataset.reward === 'shop') {
-    if (await money.showRewarded()) { money.ads.lastShop = Date.now() / 1000; store.set('ads', money.ads); econ.coins += REWARD.shopCoins; econ.save(); $('shopMsg').textContent = `+${REWARD.shopCoins} coins. Thanks for watching!`; }
-    renderShop();
-  } else if (b.id === 'btnRestore') { await money.restore(); $('shopMsg').textContent = 'Purchases restored.'; renderShop(); }
+    if (await money.showRewarded()) { money.ads.lastShop = Date.now() / 1000; store.set('ads', money.ads); econ.coins += REWARD.shopCoins; econ.save(); }
+    renderShop(); if (money.adFailed) shopSay(NO_AD); else if (money.ads.lastShop > Date.now() / 1000 - 5) shopSay(`+${REWARD.shopCoins} coins. Thanks for watching!`);
+  } else if (b.id === 'btnRestore') { await money.restore(); renderShop(); shopSay(money.billing ? 'Purchases restored.' : 'The store is not available right now. Check your connection and try again.'); }
 });
 // results: double this race's coins with an optional ad, once per race
 $('results').addEventListener('click', async e => {
@@ -3451,6 +3454,7 @@ $('results').addEventListener('click', async e => {
   const me = marbles[playerIdx]; if (!me.payout || me.payout.doubled) return;
   b.disabled = true;
   if (await money.showRewarded()) { me.payout.doubled = true; econ.coins += me.payout.total; econ.save(); sfx.coin && sfx.coin(); }
+  else if (money.adFailed) { b.textContent = 'No ad right now'; setTimeout(() => { b.disabled = false; lastResultsRender = -1; }, 4000); return; }
   lastResultsRender = -1;
 });
 // ---------- settings: rate, ad privacy, privacy policy, terms ----------
