@@ -729,7 +729,7 @@ const SPECIALS = [
   { id: 'chrome', rarity: 'epic', name: 'Chrome', price: 1800, look: 'chrome', color: '#c8d4e2', css: 'linear-gradient(180deg, #ffffff, #9fb4c8 45%, #f4f8ff 52%, #5e6b7a)',
     perk: 'Nudge +15% and bump recharges 15% faster', stats: { push: 1.15, bump: 0.85 } },
   { id: 'golden', rarity: 'legendary', name: 'Golden', price: 3000, look: 'golden', color: '#f2b600', glow: '#ffd23f', trail: '#ffe680', css: 'radial-gradient(circle at 35% 30%, #fff3b0, #f2b600 45%, #8a5a00)',
-    perk: '+50% coins from every race, steering +8%', stats: { coinMul: 1.5, steer: 1.08 } },
+    perk: '+25% coins from every race, steering +8%', stats: { coinMul: 1.25, steer: 1.08 } },
   // premium marbles are bought with real money and are looks only, so paying never buys speed
   { id: 'aurora', rarity: 'epic', name: 'Aurora', iap: 'starter_pack', look: 'aurora', color: '#3cf0c0', css: 'linear-gradient(160deg, #3cf0c0, #4b7bff 50%, #c45aff)',
     perk: 'Shimmering northern lights. Looks only, no perk.', stats: {} },
@@ -752,14 +752,14 @@ const SPECIALS = [
   { id: 'robo', rarity: 'mythic', name: 'Robo', price: 15000, look: 'robochrome', rider: 'robot', emoji: '🤖', color: '#c8d4e2', glow: '#39f5ff',
     css: 'linear-gradient(180deg, #ffffff, #9fb4c8 45%, #f4f8ff 52%, #5e6b7a)', perk: 'A robot pilot. Coin magnet and steering +10%', stats: { magnet: 2, steer: 1.1 } },
   { id: 'froggo', rarity: 'mythic', name: 'King Froggo', box: true, look: 'lily', rider: 'frog', emoji: '🐸', color: '#3cc24a', glow: '#b6ff5c', trail: 'rainbow',
-    css: 'radial-gradient(circle at 30% 35%, #8be04a 0 4px, transparent 5px), radial-gradient(circle at 65% 65%, #1d8a2c 0 5px, transparent 6px), #3cc24a', perk: 'Only found in Mystery Boxes. +25% coins from every race.', stats: { coinMul: 1.25 } },
+    css: 'radial-gradient(circle at 30% 35%, #8be04a 0 4px, transparent 5px), radial-gradient(circle at 65% 65%, #1d8a2c 0 5px, transparent 6px), #3cc24a', perk: 'Only found in Mystery Boxes. +50% coins from every race.', stats: { coinMul: 1.5 } },
   // character marbles you earn by playing rather than buying, so there's always something to chase
   { id: 'pip', rarity: 'mythic', name: 'Pip', look: 'pip', rider: 'penguin', emoji: '🐧', color: '#7fd4ff', stripe: '#ffffff', glow: '#bfe8ff', trail: '#e6f6ff',
     unlock: { kind: 'streak', need: 7, text: 'Claim the daily reward 7 days in a row' },
     css: 'repeating-linear-gradient(160deg, #7fd4ff 0 7px, #ffffff 7px 11px)', perk: 'A penguin in a bobble hat. Steering +10%', stats: { steer: 1.1 } },
   { id: 'rusty', rarity: 'mythic', name: 'Rusty', look: 'rusty', rider: 'fox', emoji: '🦊', color: '#ff7a1f', stripe: '#fff3e0', glow: '#ffb36b', trail: '#ffb36b',
     unlock: { kind: 'trophy', cup: 'frontier', text: 'Win gold in the Frontier Cup' },
-    css: 'repeating-linear-gradient(160deg, #ff7a1f 0 7px, #fff3e0 7px 11px)', perk: 'A quick little fox. Coin magnet and +15% coins', stats: { magnet: 1.8, coinMul: 1.15 } },
+    css: 'repeating-linear-gradient(160deg, #ff7a1f 0 7px, #fff3e0 7px 11px)', perk: 'A quick little fox. Coin magnet and +25% coins', stats: { magnet: 1.8, coinMul: 1.25 } },
   { id: 'bao', rarity: 'mythic', name: 'Bao', look: 'bao', rider: 'panda', emoji: '🐼', color: '#f4f4ee', stripe: '#1a1a1f', glow: '#ffffff', trail: '#9fe07a',
     unlock: { kind: 'hits', need: 50, text: 'Land 50 hits on rivals with items' },
     css: 'repeating-linear-gradient(160deg, #f4f4ee 0 7px, #1a1a1f 7px 11px)', perk: 'A snacking panda. Bump recharges 25% faster', stats: { bump: 0.75 } },
@@ -2873,7 +2873,7 @@ function openBox() {
   let r = Math.random() * 100, tier = 'coins';
   for (const [t, w] of BOX.odds) { r -= w; if (r <= 0) { tier = t; break; } }
   if (tier === 'coins') return { coins: 250 + Math.round(Math.random() * 10) * 100 };
-  const pool = SPECIALS.filter(d => d.rarity === tier && !owns(d) && !d.unlock);
+  const pool = SPECIALS.filter(d => d.rarity === tier && !owns(d) && !d.unlock && d.iap !== 'starter_pack');
   if (!pool.length) return { coins: BOX.fallback[tier], tier, dupe: true };
   const d = pool[Math.floor(Math.random() * pool.length)];
   econ.owned.push(d.id); return { marble: d };
@@ -3286,15 +3286,20 @@ const AD_UNITS = PLATFORM === 'ios'
   ? { rewarded: 'ca-app-pub-4390358547833612/6910986646', interstitial: 'ca-app-pub-4390358547833612/2369106405' }
   : { rewarded: 'ca-app-pub-4390358547833612/3554836195', interstitial: 'ca-app-pub-4390358547833612/4616636422' };
 const AD_TESTING = false;
+// Pricing rules (keep these true when changing anything below):
+// - coin packs give more coins per pound as the price rises (Pouch 1,212/£, Bag +15%, Chest +30%, Vault +65%)
+// - a bundle costs less than its parts but never less than the priciest single item in it, and bigger bundles save more
+//   (parts valued at shop prices, coins at the Pouch rate): Starter 35%, Legend 42%, Mythic 50%
+// - only Remove ads and the Mythic pack remove ads, so the £1.99 Starter pack never undercuts the £2.99 Remove ads
 // Product ids must match the in-app products created in Play Console and App Store Connect. Prices shown here are
 // fallbacks; the app shows the store's local price once it has loaded.
 const PRODUCTS = [
   { id: 'coins_small', name: 'Pouch of coins', coins: 1200, price: '£0.99', icon: '🪙' },
   { id: 'coins_medium', name: 'Bag of coins', coins: 3500, price: '£2.49', icon: '💰', tag: '+15%' },
-  { id: 'coins_large', name: 'Chest of coins', coins: 8000, price: '£4.99', icon: '🧰', tag: 'Popular' },
-  { id: 'coins_mega', name: 'Vault of coins', coins: 20000, price: '£9.99', icon: '🏦', tag: 'Best value' },
-  { id: 'starter_pack', name: 'Starter pack', once: true, coins: 2500, marble: 'aurora', noAds: true, price: '£1.99', icon: '🎁', tag: 'One time',
-    desc: '2,500 coins, the Aurora marble and no more ads between races.' },
+  { id: 'coins_large', name: 'Chest of coins', coins: 8000, price: '£4.99', icon: '🧰', tag: '+30%' },
+  { id: 'coins_mega', name: 'Vault of coins', coins: 20000, price: '£9.99', icon: '🏦', tag: 'Best value +65%' },
+  { id: 'starter_pack', name: 'Starter pack', once: true, coins: 2500, marble: 'aurora', price: '£1.99', icon: '🎁', tag: 'One time',
+    desc: '2,500 coins and the Aurora marble, only found in this pack.' },
   { id: 'remove_ads', name: 'Remove ads', once: true, noAds: true, price: '£2.99', icon: '🚫', desc: 'No ads between races, ever. Optional reward ads stay available.' },
   { id: 'marble_dragon', name: 'Dragon marble', once: true, marble: 'dragon', price: '£0.99', icon: '🐉' },
   { id: 'marble_pixel', name: 'Pixel marble', once: true, marble: 'pixel', price: '£0.99', icon: '👾' },
@@ -3302,10 +3307,10 @@ const PRODUCTS = [
   { id: 'marble_void', name: 'Void marble', once: true, marble: 'void', price: '£1.99', icon: '🌌' },
   { id: 'marble_quack', name: 'Captain Quack', once: true, marble: 'quack', price: '£2.99', icon: '🦆' },
   { id: 'marble_neko', name: 'Neko', once: true, marble: 'neko', price: '£2.99', icon: '🐱' },
-  { id: 'legend_pack', name: 'Legend pack', once: true, marbles: ['sunfire', 'void'], coins: 5000, price: '£3.99', icon: '🔥', tag: 'Save 35%',
-    desc: 'Sunfire and Void, two glowing legendary marbles, plus 5,000 coins.' },
-  { id: 'mythic_pack', name: 'Mythic pack', once: true, marbles: ['quack', 'neko'], coins: 10000, noAds: true, price: '£6.99', icon: '👑', tag: 'Best deal',
-    desc: 'Captain Quack and Neko with their riders, 10,000 coins and no more ads between races.' },
+  { id: 'legend_pack', name: 'Legend pack', once: true, marbles: ['sunfire', 'void'], coins: 3500, price: '£3.99', icon: '🔥', tag: 'Save 42%',
+    desc: 'Sunfire and Void, two glowing legendary marbles, plus 3,500 coins.' },
+  { id: 'mythic_pack', name: 'Mythic pack', once: true, marbles: ['quack', 'neko'], coins: 6000, noAds: true, price: '£6.99', icon: '👑', tag: 'Save 50%',
+    desc: 'Captain Quack and Neko with their riders, 6,000 coins and no more ads between races.' },
 ];
 const findProduct = id => PRODUCTS.find(p => p.id === id);
 // App Store product ids are unique across the whole developer account, so a few iPhone ids carry a game prefix.
@@ -3313,6 +3318,8 @@ const findProduct = id => PRODUCTS.find(p => p.id === id);
 const STORE_IDS = PLATFORM === 'ios' ? { starter_pack: 'mm_starter_pack', remove_ads: 'mm_remove_ads' } : {};
 const storeId = id => STORE_IDS[id] || id;
 const gameId = sid => Object.keys(STORE_IDS).find(k => STORE_IDS[k] === sid) || sid;
+// The Starter pack removed ads until 1.0.11. Anyone who bought it before this date keeps ad-free, even after a reinstall.
+const STARTER_NOADS_BEFORE = Date.UTC(2026, 10, 21);
 const REWARD = { shopCoins: 100, shopCooldown: 240, dailyCap: 12 };
 const DAILY = [100, 150, 200, 250, 300, 400, 750];
 const INTERSTITIAL = { everyRaces: 3, minGap: 120, graceRaces: 3 };
@@ -3403,6 +3410,14 @@ const money = {
     this.billing = st;
     // re-grant one-time purchases already owned (new phone, reinstall)
     for (const p of PRODUCTS) if (p.once && st.owned(storeId(p.id))) grant(p.id, 'owned-' + p.id);
+    this.legacyStarter();
+  },
+  legacyStarter() {
+    if (this.noAds || !this.billing) return;
+    const sid = storeId('starter_pack');
+    const old = (this.billing.localTransactions || []).some(t => t.products && t.products.some(pr => pr.id === sid)
+      && t.purchaseDate && new Date(t.purchaseDate).getTime() < STARTER_NOADS_BEFORE);
+    if (old) { this.noAds = true; store.set('noads', true); }
   },
   price(p) { const pr = this.billing && this.billing.get(storeId(p.id)); return (pr && pr.pricing && pr.pricing.price) || p.price; },
   ownsProduct(p) { return p.once && this.granted.some(t => t.endsWith(':' + p.id)); },
@@ -3418,7 +3433,7 @@ const money = {
     grant(p.id, 'test-' + Date.now());
     return '';
   },
-  async restore() { if (this.billing) { await this.billing.restorePurchases(); for (const p of PRODUCTS) if (p.once && this.billing.owned(storeId(p.id))) grant(p.id, 'owned-' + p.id); } },
+  async restore() { if (this.billing) { await this.billing.restorePurchases(); for (const p of PRODUCTS) if (p.once && this.billing.owned(storeId(p.id))) grant(p.id, 'owned-' + p.id); this.legacyStarter(); } },
 };
 function grant(id, txId) {
   const p = findProduct(id); if (!p) return;
