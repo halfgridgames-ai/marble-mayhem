@@ -3508,7 +3508,7 @@ $('results').addEventListener('click', async e => {
 // ---------- settings: rate, ad privacy, privacy policy, terms ----------
 // Links open outside the game: in the phone apps Capacitor hands non-app URLs to the system,
 // so the store link opens the Play Store or App Store app and the policy pages open in the browser.
-const APP_STORE_ID = '';  // App Store Connect -> the app -> App Information -> Apple ID, once the app record exists
+const APP_STORE_ID = '6829033430';  // App Store Connect -> the app -> App Information -> Apple ID, once the app record exists
 const LINKS = {
   play: PLATFORM !== 'ios' ? 'https://play.google.com/store/apps/details?id=com.halfgridgames.marblemayhem'
     : APP_STORE_ID ? 'itms-apps://itunes.apple.com/app/id' + APP_STORE_ID + '?action=write-review' : 'https://halfgridgames-ai.github.io/marble-mayhem/',
