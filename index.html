@@ -3520,11 +3520,23 @@ const LINKS = {
   contact: 'mailto:halfgridgames@gmail.com?subject=Marble%20Mayhem',
 };
 function openLink(url) { if (money.native) location.href = url; else window.open(url, '_blank', 'noopener'); }
-// a one-time, skippable "rate us" strip on the results screen: after a few races, on a podium finish, never online
+// The store's own review pop-up (@capacitor-community/in-app-review), only in the phone apps. Asked after a good
+// moment, at most 3 times and at least a week apart; Apple and Google still decide whether it actually shows.
+const IAR = () => (PLATFORM !== 'web' && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.InAppReview) || null;
+function nativeReview(st) {  // st holds {n, t}; returns false when there is no native pop-up, so the game shows its own strip
+  if (!IAR()) return false;
+  const now = Date.now();
+  if ((st.n || 0) < 3 && now - (st.t || 0) > 7 * 864e5) { st.n = (st.n || 0) + 1; st.t = now; setTimeout(() => IAR().requestReview().catch(() => {}), 1200); }
+  return true;
+}
+// otherwise a one-time, skippable "rate us" strip on the results screen: after a few races, on a podium finish, never online
 const rating = {
   shouldAsk(place) {
     const n = (store.get('finishes') || 0) + 1; store.set('finishes', n);
-    if (net || store.get('rate-asked') || n < 4 || place > 3 || (PLATFORM === 'ios' && !APP_STORE_ID)) return false;
+    if (net || n < 4 || place > 3) return false;
+    const st = store.get('rate-native') || {};
+    if (nativeReview(st)) { store.set('rate-native', st); return false; }
+    if (store.get('rate-asked') || (PLATFORM === 'ios' && !APP_STORE_ID)) return false;
     store.set('rate-asked', true); return true;
   },
   open() { store.set('rate-asked', true); openLink(LINKS.play); },
