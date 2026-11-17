@@ -303,6 +303,9 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 .players li.me { color: var(--gold); }
 #daily, #adOverlay { background: rgba(8,12,30,0.62); z-index: 30; }
 #settings { background: rgba(8,12,30,0.62); z-index: 30; }
+/* tablets and unfolded foldables: menus grow with the screen instead of staying phone-sized */
+@media (min-width: 760px) and (min-height: 760px) { .overlay > .card { zoom: 1.2; } }
+@media (min-width: 960px) and (min-height: 1000px) { .overlay > .card { zoom: 1.35; } }
 .card.narrow { width: min(440px, 100%); }
 .setlist { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
 .setlist .ghost { text-align: left; display: flex; align-items: center; gap: 12px; }
@@ -2747,8 +2750,8 @@ let mode = store.get('mode') || 'single', selCup = 0, gp = null;
 // on phones, a tap on Race takes the browser fullscreen (the installed app already is)
 function goFullscreen() {
   const d = document.documentElement;
-  // the game is played upright only
-  const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait-primary').catch(() => {}); } catch (e) {} };
+  // phones play upright only; tablets and unfolded foldables may turn either way
+  const lock = () => { if (Math.min(screen.width, screen.height) >= 600) return; try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait-primary').catch(() => {}); } catch (e) {} };
   if (!matchMedia('(pointer: coarse)').matches) return;
   if (document.fullscreenElement || !d.requestFullscreen || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return lock();
   try { d.requestFullscreen({ navigationUI: 'hide' }).then(lock, () => {}); } catch (e) {}
