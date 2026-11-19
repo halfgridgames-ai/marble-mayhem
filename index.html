@@ -2762,10 +2762,10 @@ function onPlayerFinish() {
   const me = marbles[playerIdx];
   const place = finishOrder.indexOf(me) + 1;
   trackEvent('race_end', { track: track.def.id, mode: raceMode(), place, seconds: Math.round(me.finishTime) });
-  setTimeout(() => money.startAds(), 1500);   // ads (and the consent form where the law needs one) start after the first race
   showBanner(place === 1 ? 'You win!' : ordinal(place) + '!', place <= 3 ? 3 : 2.2, place <= 3 ? 'win p' + place : '');
   sfx.finish(place <= 3); emit(me.p, place <= 3 ? 160 : 60, { rainbow: true, speed: 9, up: 0.8, life: 1.4, grav: 0.6 });
   if (place <= 3) startCelebration(me, place);
+  setTimeout(() => money.startAds(), 1500);   // ads (and the consent form where the law needs one) start after the first race
   const key = 'best-' + track.def.id, best = store.get(key);
   me.newBest = !track.def.randomFrom && (!best || me.finishTime < best);
   if (me.newBest) store.set(key, me.finishTime);
