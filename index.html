@@ -2762,6 +2762,7 @@ function onPlayerFinish() {
   const me = marbles[playerIdx];
   const place = finishOrder.indexOf(me) + 1;
   trackEvent('race_end', { track: track.def.id, mode: raceMode(), place, seconds: Math.round(me.finishTime) });
+  { const done = (store.get('racesFinished') || 0) + 1; store.set('racesFinished', done); setTimeout(() => remSchedule(!net && done >= 2), 3500); }
   showBanner(place === 1 ? 'You win!' : ordinal(place) + '!', place <= 3 ? 3 : 2.2, place <= 3 ? 'win p' + place : '');
   sfx.finish(place <= 3); emit(me.p, place <= 3 ? 160 : 60, { rainbow: true, speed: 9, up: 0.8, life: 1.4, grav: 0.6 });
   if (place <= 3) startCelebration(me, place);
@@ -3579,6 +3580,33 @@ async function claimDaily(double) {
   $('daily').hidden = true; sfx.coin && sfx.coin(); renderMenu();
 }
 $('dailyClaim').addEventListener('click', () => claimDaily(false));
+// reminders: phone app only (needs @capacitor/local-notifications). Three gentle nudges, rescheduled each time the game
+// opens or a race ends, so they only fire if the player stays away: tomorrow evening (daily reward), in 3 days and in 7 days.
+// Permission is asked once, after the second finished race, never on first launch.
+const LN = () => (PLATFORM !== 'web' && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LocalNotifications) || null;
+const REM_IDS = [101, 102, 103];
+function remAt(days) { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(18, 0, 0, 0); return d; }
+function remList() {
+  const ds = dailyState(), day = ds.claimed ? ds.streak % 7 + 1 : 1;
+  return [
+    { id: 101, title: 'Your daily reward is ready 🪙', body: `Day ${day} reward: ${DAILY[day - 1]} coins. ${day > 1 ? 'Keep your streak rolling!' : 'Roll in and grab it.'}`, schedule: { at: remAt(1) } },
+    { id: 102, title: 'Your marble is gathering dust 🔮', body: 'A fresh shop deal and your daily coins are waiting. One quick race?', schedule: { at: remAt(3) } },
+    { id: 103, title: 'The track misses you 🏁', body: 'Your best times are still there to beat. Come back for a quick race.', schedule: { at: remAt(7) } },
+  ];
+}
+async function remSchedule(ask) {
+  const ln = LN(); if (!ln) return;
+  try {
+    let p = await ln.checkPermissions();
+    if (p.display !== 'granted' && ask && !store.get('remAsked')) { store.set('remAsked', 1); p = await ln.requestPermissions(); trackEvent('reminders_prompt', { granted: p.display === 'granted' ? 1 : 0 }); }
+    if (p.display !== 'granted') return;
+    await ln.cancel({ notifications: REM_IDS.map(id => ({ id })) }).catch(() => {});
+    await ln.schedule({ notifications: remList() });
+  } catch (e) {}
+}
+setTimeout(() => remSchedule(false), 3000);
+// coming back from the background on a new day (for example from a reminder) shows the daily reward too, not only a cold start
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state === 'menu') setTimeout(maybeDaily, 400); });
 $('dailyDouble').addEventListener('click', () => claimDaily(true));
 
 let bannerT = 0;
