@@ -110,7 +110,7 @@ jobs:
         run: ./gradlew bundleRelease --no-daemon --stacktrace
 
       - name: Push unsigned AAB to build-output branch
-        if: env.HAS_SIGNING != 'true' && github.ref == 'refs/heads/main'
+        if: env.HAS_SIGNING != 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
