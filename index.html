@@ -2766,6 +2766,7 @@ function onPlayerFinish() {
   showBanner(place === 1 ? 'You win!' : ordinal(place) + '!', place <= 3 ? 3 : 2.2, place <= 3 ? 'win p' + place : '');
   sfx.finish(place <= 3); emit(me.p, place <= 3 ? 160 : 60, { rainbow: true, speed: 9, up: 0.8, life: 1.4, grav: 0.6 });
   if (place <= 3) startCelebration(me, place);
+  setTimeout(() => money.startAds(), 1500);   // ads (and the consent form where the law needs one) start after the first race
   const key = 'best-' + track.def.id, best = store.get(key);
   me.newBest = !track.def.randomFrom && (!best || me.finishTime < best);
   if (me.newBest) store.set(key, me.finishTime);
@@ -3337,19 +3338,30 @@ const money = {
   adMob: null, billing: null,
   rewardsLeft() { if (this.ads.day !== today()) { this.ads = { day: today(), n: 0, lastShop: 0 }; } return REWARD.dailyCap - this.ads.n; },
   noteReward() { this.rewardsLeft(); this.ads.n++; store.set('ads', this.ads); },
+  // Ads start lazily: a brand-new player sees the consent form (and Apple's tracking prompt) after their first race
+  // instead of over the menu at launch. Players who have raced before start them at launch.
   async init() {
     if (!this.native) return;
+    if (store.get('adsStarted') || store.get('races')) this.startAds();
+    try { await this.initBilling(); } catch (e) { this.billing = null; }
+  },
+  startAds() {
+    if (!this.native) return Promise.resolve();
+    if (!this.adsPromise) { store.set('adsStarted', 1); this.adsPromise = this.initAds(); }
+    return this.adsPromise;
+  },
+  async initAds() {
     try {
-      this.adMob = Capacitor.Plugins.AdMob;
+      const adMob = Capacitor.Plugins.AdMob;
       // Family-friendly ads: AdMob serves nothing above a PG (parental guidance) rating.
-      await this.adMob.initialize({ initializeForTesting: AD_TESTING, maxAdContentRating: 'ParentalGuidance' });
+      await adMob.initialize({ initializeForTesting: AD_TESTING, maxAdContentRating: 'ParentalGuidance' });
       // ask for ad consent where the law requires it (UK and EU)
-      try { const ci = await this.adMob.requestConsentInfo(); if (ci.isConsentFormAvailable && ci.status === 'REQUIRED') await this.adMob.showConsentForm(); } catch (e) {}
+      try { const ci = await adMob.requestConsentInfo(); if (ci.isConsentFormAvailable && ci.status === 'REQUIRED') await adMob.showConsentForm(); } catch (e) {}
       // iPhone: Apple's "Allow tracking?" prompt, asked once, after the consent form
-      if (PLATFORM === 'ios') try { const t = await this.adMob.trackingAuthorizationStatus(); if (t.status === 'notDetermined') await this.adMob.requestTrackingAuthorization(); } catch (e) {}
+      if (PLATFORM === 'ios') try { const t = await adMob.trackingAuthorizationStatus(); if (t.status === 'notDetermined') await adMob.requestTrackingAuthorization(); } catch (e) {}
+      this.adMob = adMob;
       this.prepRewarded(); if (!this.noAds) this.prepInterstitial();
     } catch (e) { this.adMob = null; }
-    try { await this.initBilling(); } catch (e) { this.billing = null; }
   },
   // the plugin only resolves showRewardVideoAd when the reward is earned, so listen for the close as well
   nativeRewarded() {
@@ -3382,6 +3394,7 @@ const money = {
     if (this.busy || this.rewardsLeft() <= 0) return false;
     this.busy = true; this.adFailed = false; sfx.duck(true);
     let ok = false;
+    if (this.native && !this.adMob) await this.startAds();
     try {
       if (this.native && this.adMob) { ok = await this.nativeRewarded(); this.prepRewarded(); }
       else if (this.native) { ok = false; this.adFailed = true; }
