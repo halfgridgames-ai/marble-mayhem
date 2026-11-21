@@ -1678,7 +1678,7 @@ function dressWorld(track, th, box, groundY, dir) {
 // painted backdrops: one wide picture per world, wrapped twice (mirrored) round a ring that follows the camera.
 // The number is where the horizon sits in the picture, from the top.
 const BACKDROPS = { forest: 0.6, alpine: 0.55, desert: 0.45, snow: 0.7, neon: 0.68, sunset: 0.82, jungle: 0.6, candy: 0.6, volcano: 0.72, space: 0.7, beach: 0.55, toybox: 0.62, reef: 0.55, haunted: 0.62, cloudland: 0.62 };
-const backdropTex = {};
+const backdropTex = {}, backdropHaze = {};
 function showBackdrop(name, hz, dir) {
   const group = trackGroup;
   const put = tex => {
@@ -1693,10 +1693,10 @@ function showBackdrop(name, hz, dir) {
     const d = dir || new V3(0, 0, -1); g.rotation.y = Math.atan2(-d.z, d.x);   // the middle of the picture faces down the course
     group.add(g);
     // haze matches the picture just under its horizon, so the ground melts into it
-    if (!tex.userData.haze) { const c = document.createElement('canvas'); c.width = 64; c.height = 32; const x = c.getContext('2d'); x.drawImage(tex.image, 0, 0, 64, 32);
+    if (!backdropHaze[name]) { const c = document.createElement('canvas'); c.width = 64; c.height = 32; const x = c.getContext('2d'); x.drawImage(tex.image, 0, 0, 64, 32);
       const px = x.getImageData(0, Math.min(31, Math.round((hz + 0.04) * 32)), 64, 1).data; let r = 0, gg = 0, b = 0; for (let k = 0; k < 256; k += 4) { r += px[k]; gg += px[k + 1]; b += px[k + 2]; }
-      tex.userData.haze = new THREE.Color().setRGB(r / 64 / 255, gg / 64 / 255, b / 64 / 255).convertSRGBToLinear(); }
-    scene.fog.color.copy(tex.userData.haze); scene.background.copy(tex.userData.haze); document.body.style.background = '#' + tex.userData.haze.clone().convertLinearToSRGB().getHexString();
+      backdropHaze[name] = new THREE.Color().setRGB(r / 64 / 255, gg / 64 / 255, b / 64 / 255).convertSRGBToLinear(); }
+    scene.fog.color.copy(backdropHaze[name]); scene.background.copy(backdropHaze[name]); document.body.style.background = '#' + backdropHaze[name].clone().convertLinearToSRGB().getHexString();
   };
   let b = backdropTex[name];
   if (b && b.ready) return put(b.tex);
