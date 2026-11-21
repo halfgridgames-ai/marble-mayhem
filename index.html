@@ -1643,7 +1643,7 @@ function dressWorld(track, th, box, groundY, dir) {
   }
   // a second, far bigger mountain ring behind the first, hazier, for depth
   const hz = BACKDROPS[name];
-  if (hz !== undefined) showBackdrop(name, hz, dir);
+  if (hz !== undefined) showBackdrop(name, hz, new V3().subVectors(S[Math.min(60, S.length - 1)].p, S[0].p).setY(0).normalize());   // centred on the view from the start line
   if (hz === undefined && th.hills !== 'grid' && th.hills !== 'blocks' && th.hills !== 'islands') {
     const fm = M(th.hill, 0.6, { flatShading: true });
     for (let k = 0; k < 16; k++) { const a = k / 16 * TAU + rnd() * 0.3, d = rad + 230 + rnd() * 80, h = (th.hills === 'mesas' ? 60 : 150) + rnd() * 110;
