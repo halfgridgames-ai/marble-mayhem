@@ -5185,9 +5185,9 @@ function governDpr(dt) {
 let spiralCam = 0, camLiftS = 0;   // 0..1 blend into the spiral camera, which rides the track just behind the marble
 function frame(now) {
   const dt = window.__fixedDt || Math.min(0.05, (now - last) / 1000); last = now;   // __fixedDt: steady steps for recording clips
+  if (!window.__fixedDt) governDpr(dt);
   if (track) { updateCelebration(dt); update(dt * slowMo); }
   if (window.__cam) window.__cam(camera, track);   // test hook: preview shots pick their own camera
-  if (!window.__fixedDt) governDpr(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
