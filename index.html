@@ -1429,9 +1429,15 @@ try {
   document.getElementById('menu').querySelector('.tag').textContent = 'This game needs WebGL, which your browser has turned off.';
   return;
 }
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// phones get a lighter setup (lower resolution, cheaper shadows and materials, less scenery); low-end phones lighter still.
+// A frame-rate governor in frame() trims the resolution further if a phone still can't hold its frame rate.
+const MOBILE = matchMedia('(pointer: coarse)').matches;
+const LOW_END = MOBILE && ((navigator.deviceMemory !== undefined && navigator.deviceMemory <= 3) || (navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 4));
+const maxDpr = Math.min(window.devicePixelRatio || 1, MOBILE ? (LOW_END ? 1.25 : 1.6) : 2);
+let curDpr = maxDpr;
+renderer.setPixelRatio(curDpr);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 const scene = new THREE.Scene();
 const SKY = new THREE.Color('#8fd3ff');
@@ -1442,7 +1448,7 @@ const hemi = new THREE.HemisphereLight('#dff3ff', '#5d7a3a', 0.75);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight('#fff2d6', 1.0);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(LOW_END ? 1024 : 2048, LOW_END ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 160 });
 sun.shadow.bias = -0.0006;
 scene.add(sun, sun.target);
@@ -1713,6 +1719,7 @@ const THEMES = {
 // canvases when the course loads (nothing to download). u runs across the channel, v down the track.
 const skinWorld = (() => {
 let made = [];
+const canvasCache = new Map();
 let seed = 1; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const C = (w, h = w) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; };
 const grain = (g, w, h, n, a, cols) => { for (let i = 0; i < n; i++) { g.globalAlpha = a * R(); g.fillStyle = cols[Math.floor(R() * cols.length)]; const s = 1 + R() * 3; g.fillRect(R() * w, R() * h, s, s); } g.globalAlpha = 1; };
@@ -1853,10 +1860,15 @@ const texOf = (canvas, rx = 1, ry = 1, aniso = 4) => { const t = new THREE.Canva
 return function skinWorld(track, th) {
   made.forEach(t => t.dispose()); made = [];
   const name = track.def.theme, st = STYLE[name]; if (!st) return; seed = 7;
-  const aniso = renderer ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 1;
-  const trackC = st.track(), shellC = st.shell();
+  const aniso = renderer ? Math.min(LOW_END ? 2 : MOBILE ? 4 : 8, renderer.capabilities.getMaxAnisotropy()) : 1;
+  // drawing the canvases is the slow part of loading a course, so each world's set is kept for the next race there
+  let cv = canvasCache.get(name);
+  if (!cv) { seed = 7; cv = { track: st.track(), shell: st.shell() }; seed = 21; cv.ground = st.ground(); if (st.sky) cv.sky = skyTex(st.sky); canvasCache.set(name, cv);
+    if (canvasCache.size > 3) canvasCache.delete(canvasCache.keys().next().value); }
+  const trackC = cv.track, shellC = cv.shell;
   const tMap = texOf(trackC, 1, 1, aniso), sMap = texOf(shellC, 1, 1, aniso);
-  const trackMat = new THREE.MeshPhysicalMaterial(Object.assign({ map: tMap, roughness: 0.5, clearcoat: 0.5, clearcoatRoughness: 0.3, side: THREE.DoubleSide }, st.trackPhys || {}));
+  const trackMat = MOBILE ? new THREE.MeshStandardMaterial({ map: tMap, roughness: 0.45, side: THREE.DoubleSide })   // clearcoat costs too much on phones
+    : new THREE.MeshPhysicalMaterial(Object.assign({ map: tMap, roughness: 0.5, clearcoat: 0.5, clearcoatRoughness: 0.3, side: THREE.DoubleSide }, st.trackPhys || {}));
   if (trackC.em) { trackMat.emissiveMap = texOf(trackC.em, 1, 1, aniso); trackMat.emissive.set('#ffffff'); trackMat.emissiveIntensity = 1; }
   else if (st.emissiveTrack) { trackMat.emissiveMap = tMap; trackMat.emissive.set('#ffffff'); trackMat.emissiveIntensity = 0.8; }
   const shellMat = new THREE.MeshStandardMaterial({ map: sMap, roughness: 0.8, side: THREE.DoubleSide, color: '#bbbbbb' });
@@ -1873,7 +1885,7 @@ return function skinWorld(track, th) {
       o.material = m.isMeshPhysicalMaterial ? trackMat : shellMat;
     } else if (o.geometry.type === 'TubeGeometry') o.material = rimMat;
     else if (o.geometry.type === 'PlaneGeometry' && o.geometry.parameters.width > 100) {
-      const rep = o.geometry.parameters.width / st.gRep, gc = st.ground();
+      const rep = o.geometry.parameters.width / st.gRep, gc = cv.ground;
       o.material = new THREE.MeshStandardMaterial({ map: texOf(gc, rep, rep, aniso), roughness: 1 });
       if (o.geometry.attributes.color) {   // rolling ground keeps its light and dark patches: divide out the plain ground colour
         const g0 = new THREE.Color(th.ground); o.material.vertexColors = true; o.material.color.setRGB(1 / Math.max(0.25, g0.r), 1 / Math.max(0.25, g0.g), 1 / Math.max(0.25, g0.b)); }
@@ -1889,11 +1901,12 @@ return function skinWorld(track, th) {
   trackGroup.traverse(o => { if (!o.isMesh || !o.material || !o.material.isMeshStandardMaterial) return; const m = o.material;
     if (m.fog === false && !m.map && !m.isMeshBasicMaterial) { if (name === 'volcano' && m.color.r > 0.7) { m.color.set('#3a1a10'); m.emissive.set('#ff5a1a'); m.emissiveIntensity = 0.9; } m.map = hillMap; m.flatShading = false; m.needsUpdate = true; }
     else if (o.geometry.type === 'CylinderGeometry' && m.color.getHexString() === 'fdf6e8') o.material = postMat; });
-  if (st.sky) { const t = texOf(skyTex(st.sky)); t.wrapT = THREE.ClampToEdgeWrapping; if (!sky.userData.base) sky.userData.base = sky.material; sky.material = new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, depthWrite: false, fog: false }); }
+  if (st.sky) { const t = texOf(cv.sky); t.wrapT = THREE.ClampToEdgeWrapping; if (!sky.userData.base) sky.userData.base = sky.material; sky.material = new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, depthWrite: false, fog: false }); }
 };
 })();
 let weather = null;   // falling snow, follows the camera
 function applyTheme(th, box, groundY, dir) {
+  sky.visible = true;
   if (sky.userData.base) { if (sky.material.map) sky.material.map.dispose(); sky.material = sky.userData.base; }   // back to the plain gradient sky
   sky.material.uniforms.top.value.set(th.sky[0]); sky.material.uniforms.mid.value.set(th.sky[1]); sky.material.uniforms.bot.value.set(th.sky[2]);
   scene.background.set(th.fog); scene.fog.color.set(th.fog); scene.fog.near = th.fogNear || 90; scene.fog.far = th.fogFar || 260;
@@ -2005,7 +2018,7 @@ function dressWorld(track, th, box, groundY, dir) {
   terrainH = (x, z) => { const d = trackDist(x, z), k = Math.min(1, Math.max(0, (d - 16) / 70)); return amp * sm(k) * Math.pow(fbm(x / 70, z / 70), 1.3) * 1.6; };
   // rolling ground: tinted patches, darker hollows, lighter tops
   if (amp > 0) {
-    const size = span + 400, N = 90, geo = new THREE.PlaneGeometry(size, size, N, N); geo.rotateX(-Math.PI / 2);
+    const size = span + 400, N = LOW_END ? 40 : MOBILE ? 64 : 90, geo = new THREE.PlaneGeometry(size, size, N, N); geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c0 = new THREE.Color(th.ground), c1 = new THREE.Color(th.hill), tmp = new THREE.Color();
     for (let k = 0; k < pos.count; k++) { const x = pos.getX(k) + cx, z = pos.getZ(k) + cz, h = terrainH(x, z); pos.setY(k, h);
       tmp.copy(c0).lerp(c1, Math.min(0.6, h / amp * 0.7)).multiplyScalar(0.86 + noise(x / 9, z / 9) * 0.28);
@@ -2018,7 +2031,7 @@ function dressWorld(track, th, box, groundY, dir) {
   // a second, far bigger mountain ring behind the first, hazier, for depth
   const hz = BACKDROPS[name];
   if (hz !== undefined) showBackdrop(name, hz, new V3().subVectors(S[Math.min(60, S.length - 1)].p, S[0].p).setY(0).normalize());   // centred on the view from the start line
-  if (hz === undefined && th.hills !== 'grid' && th.hills !== 'blocks' && th.hills !== 'islands') {
+  if (hz === undefined && !LOW_END && th.hills !== 'grid' && th.hills !== 'blocks' && th.hills !== 'islands') {
     const fm = M(th.hill, 0.6, { flatShading: true });
     for (let k = 0; k < 16; k++) { const a = k / 16 * TAU + rnd() * 0.3, d = rad + 230 + rnd() * 80, h = (th.hills === 'mesas' ? 60 : 150) + rnd() * 110;
       const m = th.hills === 'mesas' ? new THREE.Mesh(new THREE.CylinderGeometry(40 + rnd() * 40, 60 + rnd() * 40, h, 8), fm) : new THREE.Mesh(new THREE.ConeGeometry(h * 0.8, h, 6), fm);
@@ -2034,7 +2047,7 @@ function dressWorld(track, th, box, groundY, dir) {
     candy: ['flower', 'bush'], volcano: ['rock', 'rock', 'crystal'], space: ['rock', 'crystal'], beach: ['rock', 'flower'], toybox: [], reef: ['rock', 'flower'], haunted: ['rock', 'bush'], cloudland: ['flower'] }[name] || ['rock'];
   const dm = new THREE.Object3D(), tc = new THREE.Color();
   for (const kind of kinds) {
-    const [geo, col, sink] = PROPS[kind], n = 260, inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: col === 'multi' ? '#ffffff' : name === 'volcano' && kind === 'crystal' ? '#ff6a1a' : col,
+    const [geo, col, sink] = PROPS[kind], n = LOW_END ? 90 : MOBILE ? 170 : 260, inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: col === 'multi' ? '#ffffff' : name === 'volcano' && kind === 'crystal' ? '#ff6a1a' : col,
       emissive: kind === 'crystal' ? (name === 'volcano' ? '#ff4a10' : col) : '#000000', emissiveIntensity: kind === 'crystal' ? 0.6 : 0, roughness: 0.9, flatShading: true }), n);
     let k = 0;
     for (let t = 0; t < n * 4 && k < n; t++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * (span / 2 + 130), x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r, d = trackDist(x, z);
@@ -2059,7 +2072,7 @@ function showBackdrop(name, hz, dir) {
     if (trackGroup !== group || !tex.image) return;   // the course changed while the picture loaded
     // the painting replaces the drawn far scenery: hills, far peaks, stars, moon, rainbow and the floating clouds
     for (const o of group.children) if (o.userData.hill || o.userData.followCam) o.visible = false;
-    clouds.visible = false;
+    clouds.visible = false; sky.visible = false;   // the ring covers the whole view, so skip drawing the dome behind it
     const R = 470, H = Math.PI * R / 2;
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 64, 1, true), new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
     ring.position.y = (hz - 0.5) * H - 25; ring.renderOrder = 1;   // after the sky dome, behind everything nearer (depth test)
@@ -2076,7 +2089,7 @@ function showBackdrop(name, hz, dir) {
   if (b && b.ready) return put(b.tex);
   if (b) { b.wait.push(put); return; }
   b = backdropTex[name] = { ready: false, wait: [put] };
-  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.jpg', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.needsUpdate = true;
+  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.jpg', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
     b.ready = true; b.wait.forEach(f => f(tex)); b.wait = []; }, undefined, () => { delete backdropTex[name]; });   // offline and never cached: keep the drawn scenery
 }
 // each landmark returns a group built around (0,0,0) on the ground; big and simple so it reads from far away
@@ -2165,7 +2178,7 @@ function buildScene(track) {
   const boostMat = new THREE.MeshBasicMaterial({ color: '#7dfcff', transparent: true, opacity: 0.85, side: THREE.DoubleSide });
   const WHITE = new THREE.Color('#ffffff');
   // channel meshes, split at gaps and into short pieces
-  const CHUNK = 10;
+  const CHUNK = 20;   // 10 m pieces: half the draw calls of 5 m ones, still small enough to fade one out of the camera's way (a multiple of the 2.5 m texture repeat)
   trackChunks = [];
   const chunkFor = (a, b) => { let c = trackChunks.find(c => c.a === a && c.b === b); if (!c) { c = { a, b, meshes: [], fade: 1, want: 1 }; trackChunks.push(c); } return c; };
   let i = 0;
@@ -2211,7 +2224,7 @@ function buildScene(track) {
         for (let a = 0; a < n - 1; a++) for (let b = 0; b < P - 1; b++) { const q = a * P + b; ci.push(q, q + P, q + 1, q + 1, q + P, q + P + 1); }
         g.setIndex(ci);
         const mesh = new THREE.Mesh(g, shell ? shellMat : trackMat);
-        mesh.castShadow = true; mesh.receiveShadow = !shell;
+        mesh.castShadow = !(MOBILE && shell); mesh.userData.noShadow = !mesh.castShadow; mesh.receiveShadow = !shell;   // on phones only the channel itself casts
         trackGroup.add(mesh); chunkFor(i + c0, i + c1).meshes.push(mesh);
       }
       geo.dispose();
@@ -2222,7 +2235,7 @@ function buildScene(track) {
       for (let a = c0; a <= c1; a++) { const s = run[a]; pts.push(s.p.clone().addScaledVector(s.B, side * (s.W + s.Rc + 0.1)).addScaledVector(s.N, s.Rc + s.wall)); }
       if (pts.length < 2) continue;
       const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.15, 8, false), rimMat);
-      tube.castShadow = true; trackGroup.add(tube); chunkFor(i + c0, i + c1).meshes.push(tube);
+      tube.castShadow = !MOBILE; tube.userData.noShadow = MOBILE; trackGroup.add(tube); chunkFor(i + c0, i + c1).meshes.push(tube);
     }
     i = j;
   }
@@ -2393,7 +2406,7 @@ function buildScene(track) {
   // trees on the ground, away from the track
   const trand = rng(track.def.seed * 7);
   const trees = [];
-  const tsc = th.treeScale || 1, tn = Math.round((th.treeN || 160) * 2.2);   // denser woods, out onto the rolling ground
+  const tsc = th.treeScale || 1, tn = Math.round((th.treeN || 160) * (LOW_END ? 1.2 : MOBILE ? 1.7 : 2.2));   // denser woods, out onto the rolling ground
   for (let n = 0; n < 2600 && trees.length < tn; n++) {
     const x = box.min.x - 110 + trand() * (box.max.x - box.min.x + 220);
     const z = box.min.z - 110 + trand() * (box.max.z - box.min.z + 220);
@@ -2430,7 +2443,7 @@ function buildScene(track) {
     const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: c0, roughness: 0.9, flatShading: th.trees === 'round' || th.trees === 'rock' || th.trees === 'crystal', emissive: th.trees === 'crystal' ? th.leaf : glow ? col : '#000000', emissiveIntensity: th.trees === 'crystal' ? 0.5 : glow || 0 }), trees.length);
     const tc = new THREE.Color();
     trees.forEach(([x, z, sc, h], k) => { dm.position.set(x + xo * sc, groundY + h + yo * sc, z); dm.scale.setScalar(sc); dm.updateMatrix(); inst.setMatrixAt(k, dm.matrix); if (multi) inst.setColorAt(k, tc.set(th.leafs[k % th.leafs.length])); });
-    inst.castShadow = true; trackGroup.add(inst);
+    inst.castShadow = !MOBILE; trackGroup.add(inst);   // tree shadows only on computers
   }
   skinWorld(track, th);
   scene.add(trackGroup);
@@ -3302,6 +3315,7 @@ function loadTrack(i, seed, netSetup) {
   track = src.arena ? buildArena(src) : buildTrack(src.random ? randomCourse(seed ?? ((Math.random() * 1e9) | 0)) : src);
   track.src = src;
   (track.arena ? buildArenaScene : buildScene)(track);
+  renderer.compile(scene, camera);   // build every shader now, while the course loads, not mid-race
   finishOrder = []; createMarbles(netSetup);
 }
 let mode = store.get('mode') || 'single', selCup = 0, gp = null;
@@ -5153,16 +5167,27 @@ function fadeChunks(dt) {
     const on = c.fade < 0.99;
     for (const m of c.meshes) {
       if (on && !m.userData.ghost) { m.userData.base = m.material; m.userData.ghost = m.material.clone(); m.userData.ghost.transparent = true; m.userData.ghost.depthWrite = false; }
-      if (m.userData.ghost) { m.material = on ? m.userData.ghost : m.userData.base; m.userData.ghost.opacity = c.fade; m.castShadow = !on || c.fade > 0.6; }
+      if (m.userData.ghost) { m.material = on ? m.userData.ghost : m.userData.base; m.userData.ghost.opacity = c.fade; m.castShadow = !m.userData.noShadow && (!on || c.fade > 0.6); }
     }
     c.want = 1;
   }
+}
+// frame-rate governor: during races, step the render resolution down when frames run slow and back up when there's room
+const gov = { t: 0, n: 0, good: 0 };
+function governDpr(dt) {
+  if (state !== 'race') { gov.t = gov.n = 0; return; }
+  gov.t += dt; gov.n++;
+  if (gov.n < 90) return;
+  const avg = gov.t / gov.n; gov.t = gov.n = 0;
+  if (avg > 1 / 48 && curDpr > 0.75) { curDpr = Math.max(0.75, curDpr * 0.85); gov.good = 0; renderer.setPixelRatio(curDpr); resize(); }
+  else if (avg < 1 / 58 && curDpr < maxDpr && ++gov.good >= 4) { curDpr = Math.min(maxDpr, curDpr + 0.1); gov.good = 0; renderer.setPixelRatio(curDpr); resize(); }
 }
 let spiralCam = 0, camLiftS = 0;   // 0..1 blend into the spiral camera, which rides the track just behind the marble
 function frame(now) {
   const dt = window.__fixedDt || Math.min(0.05, (now - last) / 1000); last = now;   // __fixedDt: steady steps for recording clips
   if (track) { updateCelebration(dt); update(dt * slowMo); }
   if (window.__cam) window.__cam(camera, track);   // test hook: preview shots pick their own camera
+  if (!window.__fixedDt) governDpr(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
