@@ -1688,7 +1688,7 @@ function showBackdrop(name, hz, dir) {
     clouds.visible = false;
     const R = 470, H = Math.PI * R / 2;
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 64, 1, true), new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
-    ring.position.y = (hz - 0.5) * H - 25; ring.renderOrder = -1;
+    ring.position.y = (hz - 0.5) * H - 25; ring.renderOrder = 1;   // after the sky dome, behind everything nearer (depth test)
     const g = new THREE.Group(); g.userData.followCam = true; g.add(ring);
     const d = dir || new V3(0, 0, -1); g.rotation.y = Math.atan2(-d.z, d.x);   // the middle of the picture faces down the course
     group.add(g);
