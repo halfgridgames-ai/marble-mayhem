@@ -1675,7 +1675,7 @@ return function skinWorld(track, th) {
   const V = 2.5;   // metres per texture repeat down the track (divides the 5 m mesh chunks, so no seams)
   trackGroup.traverse(o => {
     if (!o.isMesh) return; const m = o.material;
-    if (m && m.vertexColors && o.geometry.attributes.color) {
+    if (m && m.vertexColors && o.geometry.attributes.color && !o.userData.terrain) {
       const g = o.geometry, pos = g.attributes.position, P = 29, rows = pos.count / P, uv = new Float32Array(pos.count * 2), a = new THREE.Vector3(), b = new THREE.Vector3();
       for (let r = 0; r < rows; r++) { let d = 0; const ds = [0]; for (let k = 1; k < P; k++) { a.fromBufferAttribute(pos, r * P + k - 1); b.fromBufferAttribute(pos, r * P + k); d += a.distanceTo(b); ds.push(d); }
         for (let k = 0; k < P; k++) { uv[(r * P + k) * 2] = ds[k] / d; uv[(r * P + k) * 2 + 1] = r * 0.5 / V; } }
