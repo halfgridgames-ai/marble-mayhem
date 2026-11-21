@@ -1558,7 +1558,7 @@ function applyTheme(th, box, groundY, dir) {
         const h = 80 + hr() * 90, r = h * (0.55 + hr() * 0.2); m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), mat); m.position.set(x, groundY + h / 2 - 2, z);
         if (!th.moon) { const c = new THREE.Mesh(new THREE.ConeGeometry(r * 0.32, h * 0.32, 7), cap); c.position.y = h * 0.34 + 0.5; m.add(c); }
       } else { const h = 30 + hr() * 40; m = new THREE.Mesh(new THREE.SphereGeometry(h, 12, 8), mat); m.scale.set(1.6, 0.7, 1.6); m.position.set(x, groundY - h * 0.15, z); }
-      m.rotation.y = hr() * TAU; trackGroup.add(m);
+      m.rotation.y = hr() * TAU; m.userData.hill = true; trackGroup.add(m);
     }
   }
   if (th.stars) {
@@ -1642,7 +1642,9 @@ function dressWorld(track, th, box, groundY, dir) {
     land.position.set(cx, groundY + 0.02, cz); land.receiveShadow = true; land.userData.terrain = true; trackGroup.add(land);
   }
   // a second, far bigger mountain ring behind the first, hazier, for depth
-  if (th.hills !== 'grid' && th.hills !== 'blocks' && th.hills !== 'islands') {
+  const hz = BACKDROPS[name];
+  if (hz !== undefined) showBackdrop(name, hz, dir);
+  if (hz === undefined && th.hills !== 'grid' && th.hills !== 'blocks' && th.hills !== 'islands') {
     const fm = M(th.hill, 0.6, { flatShading: true });
     for (let k = 0; k < 16; k++) { const a = k / 16 * TAU + rnd() * 0.3, d = rad + 230 + rnd() * 80, h = (th.hills === 'mesas' ? 60 : 150) + rnd() * 110;
       const m = th.hills === 'mesas' ? new THREE.Mesh(new THREE.CylinderGeometry(40 + rnd() * 40, 60 + rnd() * 40, h, 8), fm) : new THREE.Mesh(new THREE.ConeGeometry(h * 0.8, h, 6), fm);
@@ -1669,9 +1671,39 @@ function dressWorld(track, th, box, groundY, dir) {
     inst.count = k; trackGroup.add(inst);
   }
   // the landmark sits ahead of the run, beyond the course, so the camera looks at it most of the race
-  const L = LANDMARKS[name]; if (L) { const d = dir || new V3(0, 0, -1), g = L(M, rnd, th);
+  const L = hz === undefined && LANDMARKS[name]; if (L) { const d = dir || new V3(0, 0, -1), g = L(M, rnd, th);
     const far = rad * 0.75 + 60; g.position.set(cx + d.x * far, groundY + terrainH(cx + d.x * far, cz + d.z * far), cz + d.z * far); g.rotation.y = Math.atan2(d.x, d.z) + Math.PI; if (g.userData.float) g.position.y += 70; trackGroup.add(g);
     g.traverse(o => { if (o.userData.spin) spinners.push(o); }); }
+}
+// painted backdrops: one wide picture per world, wrapped twice (mirrored) round a ring that follows the camera.
+// The number is where the horizon sits in the picture, from the top.
+const BACKDROPS = { forest: 0.6, alpine: 0.55, desert: 0.45, snow: 0.7, neon: 0.68, sunset: 0.82, jungle: 0.6, candy: 0.6, volcano: 0.72, space: 0.7, beach: 0.55, toybox: 0.62, reef: 0.55, haunted: 0.62, cloudland: 0.62 };
+const backdropTex = {};
+function showBackdrop(name, hz, dir) {
+  const group = trackGroup;
+  const put = tex => {
+    if (trackGroup !== group || !tex.image) return;   // the course changed while the picture loaded
+    // the painting replaces the drawn far scenery: hills, far peaks, stars, moon, rainbow and the floating clouds
+    for (const o of group.children) if (o.userData.hill || o.userData.followCam) o.visible = false;
+    clouds.visible = false;
+    const R = 470, H = Math.PI * R / 2;
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 64, 1, true), new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
+    ring.position.y = (hz - 0.5) * H - 25; ring.renderOrder = -1;
+    const g = new THREE.Group(); g.userData.followCam = true; g.add(ring);
+    const d = dir || new V3(0, 0, -1); g.rotation.y = Math.atan2(-d.z, d.x);   // the middle of the picture faces down the course
+    group.add(g);
+    // haze matches the picture just under its horizon, so the ground melts into it
+    if (!tex.userData.haze) { const c = document.createElement('canvas'); c.width = 64; c.height = 32; const x = c.getContext('2d'); x.drawImage(tex.image, 0, 0, 64, 32);
+      const px = x.getImageData(0, Math.min(31, Math.round((hz + 0.04) * 32)), 64, 1).data; let r = 0, gg = 0, b = 0; for (let k = 0; k < 256; k += 4) { r += px[k]; gg += px[k + 1]; b += px[k + 2]; }
+      tex.userData.haze = new THREE.Color().setRGB(r / 64 / 255, gg / 64 / 255, b / 64 / 255).convertSRGBToLinear(); }
+    scene.fog.color.copy(tex.userData.haze); scene.background.copy(tex.userData.haze); document.body.style.background = '#' + tex.userData.haze.clone().convertLinearToSRGB().getHexString();
+  };
+  let b = backdropTex[name];
+  if (b && b.ready) return put(b.tex);
+  if (b) { b.wait.push(put); return; }
+  b = backdropTex[name] = { ready: false, wait: [put] };
+  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.jpg', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.needsUpdate = true;
+    b.ready = true; b.wait.forEach(f => f(tex)); b.wait = []; }, undefined, () => { delete backdropTex[name]; });   // offline and never cached: keep the drawn scenery
 }
 // each landmark returns a group built around (0,0,0) on the ground; big and simple so it reads from far away
 {
