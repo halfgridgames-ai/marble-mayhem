@@ -1606,6 +1606,7 @@ const LANDMARKS = {};
 function dressWorld(track, th, box, groundY, dir) {
   spinners = [];
   const S = track.S, rnd = rng(track.def.seed * 31 + 3), name = track.def.theme;
+  if (!th.fogFar) { scene.fog.near = 140; scene.fog.far = 430; }   // let the far scenery show through
   const haze = (c, k) => new THREE.Color(c).lerp(new THREE.Color(th.fog), k);
   const M = (c, k = 0.25, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: haze(c, k), roughness: 0.85, fog: false }, o));
   const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
@@ -1682,11 +1683,10 @@ function dressWorld(track, th, box, groundY, dir) {
   const tower = (g, M, x, z, r, h, wall, roof) => { g.add(at(cyl(r, r * 1.08, h, 12, M(wall, 0.2)), x, h / 2, z)); g.add(at(cone(r * 1.35, r * 2.4, 12, M(roof, 0.2)), x, h + r * 1.2, z)); };
   const glowWin = col => new THREE.MeshBasicMaterial({ color: col, fog: false });
   Object.assign(LANDMARKS, {
-    forest: (M, r) => { const g = new THREE.Group(), rock = M('#7d8794', 0.3, { flatShading: true });   // cliffs with a waterfall
-      g.add(at(box(160, 90, 40, rock), 0, 45, 0)); g.add(at(box(90, 120, 36, rock), -70, 60, 6)); g.add(at(box(70, 70, 30, rock), 80, 35, 8));
-      g.add(at(box(14, 88, 2, new THREE.MeshBasicMaterial({ color: '#e8f8ff', fog: false, transparent: true, opacity: 0.9 })), 10, 46, 21));
-      const mist = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: '#ffffff', transparent: true, opacity: 0.8, depthWrite: false, fog: false })); mist.scale.set(46, 22, 1); g.add(at(mist, 10, 4, 26));
-      const pine = M('#2f6a40', 0.3, { flatShading: true }); for (let k = 0; k < 14; k++) g.add(at(cone(5, 16, 6, pine), -80 + k * 12, 92 + r() * 30 * (k % 3 === 0 ? 1 : 0), -5)); return g; },
+    forest: (M, r) => { const g = new THREE.Group(), bark = M('#6a4a33', 0.2), leaf = M('#2f7a46', 0.25, { flatShading: true });   // one ancient giant pine and its neighbours
+      for (const [x, z, s] of [[0, 0, 1], [-70, 30, 0.6], [80, 20, 0.7], [-130, -20, 0.5], [140, -30, 0.55]]) {
+        g.add(at(cyl(6 * s, 10 * s, 70 * s, 8, bark), x, 35 * s, z)); for (let k = 0; k < 5; k++) g.add(at(cone((46 - k * 7) * s, 52 * s, 9, leaf), x, (60 + k * 30) * s, z)); }
+      return g; },
     alpine: (M, r) => { const g = new THREE.Group(); g.add(at(cone(110, 260, 7, M('#8a96a8', 0.35, { flatShading: true })), 0, 130, 0)); g.add(at(cone(48, 112, 7, M('#ffffff', 0.15, { flatShading: true })), 0, 205, 0));
       for (let k = 0; k < 6; k++) { const x = (k - 2.5) * 22, z = 120 + r() * 20; g.add(at(box(10, 7, 8, M('#a8743a', 0.2)), x, 3.5, z)); const roof = cone(9, 6, 4, M('#b8303a', 0.2)); roof.rotation.y = Math.PI / 4; g.add(at(roof, x, 10, z)); } return g; },
     desert: (M) => { const g = new THREE.Group(), red = M('#c46a3a', 0.3, { flatShading: true }); const arch = new THREE.Mesh(new THREE.TorusGeometry(55, 14, 8, 20, Math.PI), red); g.add(at(arch, 0, 0, 0));
