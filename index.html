@@ -368,6 +368,57 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 .missions .mi.ready .buy { animation: mready 1.2s ease-in-out infinite alternate; }
 @keyframes mready { to { transform: scale(1.07); } }
 @media (prefers-reduced-motion: reduce) { .missions .mi.ready .buy { animation: none; } }
+/* ---------- Grand Prix career map: one cup per screen over a slow flyover of its first course ---------- */
+.career { padding: 0; align-items: stretch; background: linear-gradient(180deg, rgba(12,18,41,0.7) 0, rgba(12,18,41,0.1) 26%, rgba(12,18,41,0) 42%, rgba(12,18,41,0.6) 62%, rgba(12,18,41,0.92)); }
+.cwrap { width: min(560px, 100%); margin: 0 auto; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); }
+.ctop { display: flex; align-items: center; gap: 10px; }
+.cback { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 2px solid var(--gold); background: rgba(12,18,41,0.7); color: var(--gold); font-size: 26px; font-weight: 900; line-height: 1; }
+.ctt { flex: 1; display: flex; flex-direction: column; }
+.ctt small { font-size: 11px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.ctt b { font-family: var(--display); font-size: 26px; line-height: 1; }
+.ccount { background: rgba(12,18,41,0.75); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; font-weight: 900; font-size: 14px; white-space: nowrap; }
+.cstrip { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; }
+.cstrip button { aspect-ratio: 1; border: 0; border-radius: 9px; background: rgba(12,18,41,0.6); font-size: clamp(13px, 4vw, 19px); padding: 0; position: relative; filter: grayscale(1) brightness(0.45); }
+.cstrip button.won { filter: none; background: rgba(255,197,49,0.18); }
+.cstrip button.open:not(.won) { filter: grayscale(0.6) brightness(0.8); }
+.cstrip button[aria-selected="true"] { outline: 2px solid var(--gold); outline-offset: 1px; }
+.cstage { flex: 1 1 auto; position: relative; display: flex; align-items: flex-end; min-height: 0; }
+.cpage { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; touch-action: pan-y; }
+.cpage.in-r { animation: cin-r 0.32s cubic-bezier(.2,.8,.3,1); } .cpage.in-l { animation: cin-l 0.32s cubic-bezier(.2,.8,.3,1); }
+@keyframes cin-r { from { transform: translateX(36px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cin-l { from { transform: translateX(-36px); opacity: 0; } to { transform: none; opacity: 1; } }
+.carrow { position: absolute; top: 18%; z-index: 2; width: 40px; height: 56px; border: 0; border-radius: 12px; background: rgba(12,18,41,0.72); color: #fff; font-size: 30px; font-weight: 900; }
+.carrow.l { left: -4px; } .carrow.r { right: -4px; } .carrow:disabled { opacity: 0; pointer-events: none; }
+.chero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.chero .cn { font-size: 11px; font-weight: 900; letter-spacing: 0.16em; color: var(--ink-dim); text-transform: uppercase; background: rgba(12,18,41,0.7); border-radius: 99px; padding: 3px 10px; }
+.chero h2 { font-family: var(--display); font-size: clamp(30px, 9vw, 40px); margin: 0; line-height: 1.05; text-shadow: 0 3px 0 rgba(0,0,0,0.35); }
+.ctro { width: clamp(110px, 34vw, 150px); aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(64px, 20vw, 92px); position: relative; animation: cfloat 3.4s ease-in-out infinite; }
+@keyframes cfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.ctro.dark { filter: brightness(0) drop-shadow(0 0 1px rgba(255,255,255,0.5)); opacity: 0.55; }
+.ctro.won::before { content: ''; position: absolute; inset: 8%; border-radius: 50%; background: radial-gradient(circle, rgba(255,214,90,0.55), transparent 65%); z-index: -1; }
+.cplate { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 4px 12px; font-weight: 900; font-size: 13px; background: rgba(12,18,41,0.82); border: 1px solid var(--line); }
+.cplate.m1 { background: linear-gradient(180deg, #ffe680, #e0a419); color: #3a2300; border: 0; } .cplate.m2 { background: linear-gradient(180deg, #f2f5fa, #a9b4c4); color: #1c2433; border: 0; } .cplate.m3 { background: linear-gradient(180deg, #f2b37a, #b0642a); color: #2a1406; border: 0; }
+.cpanel { background: rgba(12,18,41,0.86); border: 1px solid var(--line); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.cmeta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-dim); font-weight: 700; }
+.cmeta .diff { color: #fff; border-radius: 99px; padding: 2px 9px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; }
+.croute { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; position: relative; }
+.croute::before { content: ''; position: absolute; left: 12%; right: 12%; top: 15px; height: 3px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0 6px, transparent 6px 11px); }
+.croute li { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; font-size: 11px; font-weight: 800; line-height: 1.15; position: relative; }
+.croute li i { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 900; font-size: 14px; background: #2a3563; border: 2px solid rgba(255,255,255,0.3); }
+.croute li.p1 i { background: #e0a419; border-color: #ffe680; color: #3a2300; } .croute li.p2 i { background: #a9b4c4; border-color: #f2f5fa; color: #1c2433; } .croute li.p3 i { background: #b0642a; border-color: #f2b37a; }
+.crew { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 8px 10px; }
+.crew .dot { width: 40px; height: 40px; flex: none; margin: 0; }
+.crew span { display: flex; flex-direction: column; font-weight: 900; font-size: 15px; }
+.crew small { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.crew em { font-style: normal; margin-left: auto; font-size: 12px; font-weight: 900; color: var(--gold); text-align: right; }
+.crew em.got { color: #7be08a; }
+.clock { text-align: center; font-weight: 800; font-size: 14px; color: var(--ink-dim); }
+.cgo { display: flex; } .cgo .go { flex: 1; }
+.cgo .go:disabled { background: #3a4570; color: #9aa6c4; box-shadow: 0 5px 0 #222a48; }
+@media (max-height: 700px) { .ctro { width: 92px; font-size: 56px; } .chero h2 { font-size: 28px; } .cpanel { padding: 9px; gap: 7px; } }
+@media (prefers-reduced-motion: reduce) { .ctro, .cpage.in-r, .cpage.in-l { animation: none; } }
+
 .mdone { margin-top: 8px; color: var(--mint); font-weight: 800; font-size: 14px; }
 #hud .hitpop { position: absolute; left: 50%; top: 30%; transform: translate(-50%, 0); font-family: var(--display); font-size: 34px; color: #ffd23f; text-shadow: 0 3px 0 #b3701a, 0 0 18px rgba(255,210,63,0.6); pointer-events: none; opacity: 0; white-space: nowrap; }
 #hud .hitpop.show { animation: hitpop 1.1s ease-out forwards; }
@@ -751,6 +802,19 @@ HGSplash.show();
     </div>
   </div>
 
+  <div class="overlay career" id="career" hidden>
+    <div class="cwrap">
+      <div class="ctop"><button class="cback" id="careerBack" aria-label="Back to the menu">‹</button><div class="ctt"><small>Career</small><b>Grand Prix</b></div><span class="ccount" id="careerCount"></span></div>
+      <div class="cstrip" id="careerStrip" role="tablist" aria-label="Cups"></div>
+      <div class="cstage" id="careerStage">
+        <button class="carrow l" id="careerPrev" aria-label="Previous cup">‹</button>
+        <div class="cpage" id="careerPage" aria-live="polite"></div>
+        <button class="carrow r" id="careerNext" aria-label="Next cup">›</button>
+      </div>
+      <div class="cgo"><button class="go" id="careerGo">Start cup</button></div>
+    </div>
+  </div>
+
   <div class="overlay" id="podium" hidden>
     <div class="card results">
       <h1 id="pTitle"></h1>
@@ -758,7 +822,7 @@ HGSplash.show();
       <div class="podium" id="pPodium"></div>
       <ol id="pList"></ol>
       <div class="earn" id="pEarn"></div>
-      <div class="row"><button class="go" id="btnPodiumDone">Back to menu</button></div>
+      <div class="row"><button class="go" id="btnPodiumDone">Back to the map</button></div>
     </div>
   </div>
 
@@ -863,6 +927,20 @@ const SPECIALS = [
     css: 'repeating-linear-gradient(160deg, #f4f4ee 0 7px, #1a1a1f 7px 11px)', perk: 'A snacking panda. Bump recharges 25% faster', stats: { bump: 0.75 } },
   { id: 'rex', rarity: 'mythic', name: 'Rex', price: 12000, look: 'rex', rider: 'dino', emoji: '🦖', color: '#ffbf1f', stripe: '#ff7a3d', glow: '#ffd23f', trail: '#ff7a3d',
     css: 'repeating-linear-gradient(160deg, #ffbf1f 0 7px, #ff7a3d 7px 11px)', perk: 'A tiny T. rex with a big grin. Nudge +20%', stats: { push: 1.2 } },
+  // Grand Prix career: a top-three finish in each cup earns its marble, and a trophy from all twelve earns Champ
+  ...[['clover', 'Clover', 'sprout', '#3fbf5a', '#d9ffb0', 'rare'], ['blocks', 'Blocks', 'toybox', '#ff5a4d', '#ffd23f', 'rare'],
+    ['acornm', 'Acorn', 'acorn', '#a8652a', '#f2c78a', 'rare'], ['gumball', 'Gumball', 'sugar', '#ff6fb8', '#7fe3ff', 'epic'],
+    ['pearl', 'Pearl', 'reef', '#f3eefc', '#ffb3c8', 'epic'], ['canyon', 'Canyon', 'frontier', '#d9662b', '#ffd2a1', 'epic'],
+    ['frostbite', 'Frostbite', 'summit', '#bfe8ff', '#3a8fe0', 'epic'], ['magma', 'Magma Heart', 'inferno', '#3a0f08', '#ff7a1a', 'legendary'],
+    ['pumpkin', 'Pumpkin', 'haunted', '#ff8a1a', '#3a1f5c', 'legendary'], ['starfall', 'Starfall', 'galaxy', '#1a1650', '#ffe14d', 'legendary'],
+    ['skypuff', 'Sky Puff', 'cloud', '#ffffff', '#9fd4ff', 'legendary'], ['dice', 'Dice', 'chaos', '#ffffff', '#e8343a', 'legendary']]
+    .map(([id, name, cup, color, stripe, rarity]) => ({ id, rarity, name, color, stripe,
+      glow: rarity === 'legendary' ? stripe : undefined, trail: rarity === 'legendary' ? stripe : undefined,
+      css: `repeating-linear-gradient(160deg, ${color} 0 7px, ${stripe} 7px 11px)`, perk: 'A Grand Prix prize. Looks only.', stats: {},
+      unlock: { kind: 'cup', cup, text: '' } })),
+  { id: 'champ', rarity: 'mythic', name: 'Champ', rider: 'lion', emoji: '🦁', color: '#ffc531', stripe: '#c8661a', glow: '#ffe680', trail: '#ffd23f',
+    unlock: { kind: 'champion', need: 12, text: 'Win a trophy in all twelve Grand Prix cups' },
+    css: 'repeating-linear-gradient(160deg, #ffc531 0 7px, #c8661a 7px 11px)', perk: 'The Grand Prix Champion\'s lion. +30% coins from every race.', stats: { coinMul: 1.3 } },
 ];
 const RARITY = { common: { name: 'Common', color: '#9aa6c4' }, rare: { name: 'Rare', color: '#3aa0ff' }, epic: { name: 'Epic', color: '#a46bff' },
   legendary: { name: 'Legendary', color: '#ffab2e' }, mythic: { name: 'Mythic', color: '#ff3dbb' } };
@@ -894,6 +972,10 @@ const CUPS = [
   { id: 'chaos', name: 'Chaos Cup', diff: 'Surprise', dc: 'd-rand', tracks: [7, 7, 7, 7], trophy: { name: 'Chaos Cube', icon: '🎲' }, blurb: 'Four random courses nobody has seen before.' },
 ];
 const CUP_PRIZE = [400, 250, 150];
+// the Grand Prix career goes through the cups in this order; a top-three finish opens the next one
+const CAREER = ['sprout', 'toybox', 'acorn', 'sugar', 'reef', 'frontier', 'summit', 'inferno', 'haunted', 'galaxy', 'cloud', 'chaos'].map(id => CUPS.find(c => c.id === id));
+const cupMarble = c => SPECIALS.find(d => d.unlock && d.unlock.kind === 'cup' && d.unlock.cup === c.id);
+for (const c of CUPS) { const d = cupMarble(c); if (d) d.unlock.text = `Finish in the top three of the ${c.name}`; }
 const DIFF_MUL = { Easy: 1, Medium: 1.2, Hard: 1.4, Surprise: 1.3 };
 const DIFF_ORDER = { Easy: 0, Medium: 1, Hard: 2, Surprise: 3, Survival: 4 };
 
@@ -1468,6 +1550,19 @@ function buildRider(kind) {
     const tail = add(ball(0.1), fur, 0, 0.22, -0.28, 0.8, 0.8, 1.7); tail.rotation.x = -0.6; g.userData.tail = tail;
     add(ball(0.06), cream, 0, 0.33, -0.43, 0.9, 0.9, 1.2);
     add(new THREE.TorusGeometry(0.1, 0.022, 6, 18), M('#2fa35b'), 0, 0.31, 0.03).rotation.x = Math.PI / 2;   // green bandana
+  } else if (kind === 'lion') {
+    const fur = M('#ffc531'), mane = M('#c8661a'), dark = M('#3a2016');
+    add(ball(0.19), fur, 0, 0.17, -0.02, 1, 0.95, 1.1);
+    for (let k = 0; k < 10; k++) { const a = k / 10 * TAU; add(ball(0.075), mane, Math.cos(a) * 0.15, 0.42 + Math.sin(a) * 0.15, 0.0); }   // the mane
+    add(ball(0.15), fur, 0, 0.42, 0.06);
+    add(ball(0.07), M('#fff3d6'), 0, 0.37, 0.18, 1.2, 0.8, 0.8);   // muzzle
+    add(ball(0.028), dark, 0, 0.4, 0.23);
+    for (const sx of [-1, 1]) { add(ball(0.045), fur, sx * 0.11, 0.56, 0.06); eye(sx * 0.06, 0.46, 0.19, 0.026); shine(sx * 0.06 + 0.008, 0.47, 0.212); }
+    const crown = M('#ffd23f', { emissive: '#a06a00', emissiveIntensity: 0.5, metalness: 0.5, roughness: 0.3 });
+    add(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 14, 1, true), crown, 0, 0.6, 0.06);
+    for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; add(new THREE.ConeGeometry(0.025, 0.06, 6), crown, Math.cos(a) * 0.1, 0.66, 0.06 + Math.sin(a) * 0.1); }
+    const tail = add(new THREE.CylinderGeometry(0.02, 0.02, 0.26, 6), fur, 0, 0.2, -0.26); tail.rotation.x = -1; g.userData.tail = tail;
+    add(ball(0.05), mane, 0, 0.3, -0.37);
   } else if (kind === 'panda') {
     const w = M('#fbfbf6'), k = M('#1a1a1f');
     add(ball(0.21), w, 0, 0.17, 0, 1.05, 0.95, 1);
@@ -2951,6 +3046,8 @@ function unlockProgress(d) {
   if (u.kind === 'streak') return [Math.min(u.need, store.get('bestStreak') || 0), u.need];
   if (u.kind === 'hits') return [Math.min(u.need, store.get('hitsTotal') || 0), u.need];
   if (u.kind === 'trophy') return [store.get('trophy-' + u.cup) === 1 ? 1 : 0, 1];
+  if (u.kind === 'cup') return [store.get('trophy-' + u.cup) ? 1 : 0, 1];
+  if (u.kind === 'champion') return [CUPS.filter(c => store.get('trophy-' + c.id)).length, u.need];
   return [0, 1];
 }
 // hand over any marble that has just been earned, and say so
@@ -3044,7 +3141,7 @@ function playerStats() {
 }
 const coinHtml = n => `<span class="wallet"><i class="coin"></i>${n.toLocaleString()}</span>`;
 function nextUnlock() {
-  const next = SPECIALS.filter(d => !d.iap && !owns(d)).sort((a, b) => a.price - b.price)[0];
+  const next = SPECIALS.filter(d => d.price && !owns(d)).sort((a, b) => a.price - b.price)[0];   // earned marbles have no price
   if (!next) return 'You own every special marble.';
   return econ.coins >= next.price ? `You can afford ${next.name} in the shop now.` : `${(next.price - econ.coins).toLocaleString()} more coins unlocks ${next.name}.`;
 }
@@ -3208,6 +3305,106 @@ function loadTrack(i, seed, netSetup) {
   finishOrder = []; createMarbles(netSetup);
 }
 let mode = store.get('mode') || 'single', selCup = 0, gp = null;
+// ---------- Grand Prix career map ----------
+if (mode === 'gp') mode = 'single';   // the Grand Prix starts from its map, never straight from the menu
+// Players who raced before the map existed keep every cup open; everyone else opens them one podium at a time.
+if (store.get('careerSeen') == null) { if ((store.get('racesFinished') || 0) > 0 || CUPS.some(c => store.get('trophy-' + c.id))) store.set('careerAll', 1); store.set('careerSeen', 1); }
+const cupOpen = k => k <= 0 || !!store.get('careerAll') || !!store.get('trophy-' + CAREER[k - 1].id) || !!store.get('trophy-' + CAREER[k].id);
+const trophiesWon = () => CAREER.filter(c => store.get('trophy-' + c.id)).length;
+const CHAMP_PAGE = CAREER.length;   // the last page is the Grand Prix Champion
+let careerPage = 0, careerFly = null, careerReturn = false, careerLoadT = 0;
+function careerStartPage() {
+  const k = CAREER.findIndex((c, i) => cupOpen(i) && !store.get('trophy-' + c.id));
+  return k < 0 ? (trophiesWon() === CAREER.length ? CHAMP_PAGE : 0) : k;
+}
+// the menu's Grand Prix ticket names the cup you're working on
+const careerCup = () => { selCup = Math.max(0, CUPS.indexOf(CAREER[Math.min(careerStartPage(), CAREER.length - 1)])); };
+careerCup();
+function openCareer(page) {
+  sfx.init();
+  careerPage = page ?? careerStartPage();
+  $('menu').hidden = true; $('career').hidden = false; state = 'menu';
+  renderCareer(0); careerBackdrop(true);
+  // trophies won before the map existed hand over their marbles the first time the map opens
+  checkUnlocks(); if (unlockedNow.length && $('boxOverlay').hidden) { renderCareer(0); setTimeout(showUnlocks, 600); }
+}
+function closeCareer() {
+  $('career').hidden = true; careerFly = null; careerReturn = false; clearTimeout(careerLoadT);
+  careerCup();
+  if (mode === 'gp') { mode = 'single'; store.set('mode', 'single'); fitTrackToMode(); }
+  if (track && track.src !== TRACKS[selTrack]) loadTrack(selTrack);
+  $('menu').hidden = false; if (typeof showMenuView === 'function') showMenuView('home');
+  renderMenu();
+}
+// the flyover shows the first course of the cup on screen, loaded once the player stops flicking through cups
+function careerBackdrop(now) {
+  clearTimeout(careerLoadT);
+  const c = CAREER[Math.min(careerPage, CAREER.length - 1)], ti = careerPage === CHAMP_PAGE ? CAREER[CAREER.length - 2].tracks[1] : c.tracks[0];
+  const go = () => { if ($('career').hidden) return; if (!track || track.src !== TRACKS[ti]) loadTrack(ti); careerFly = { u: 0.04, snap: true }; };
+  now ? go() : (careerLoadT = setTimeout(go, 380));
+}
+const _fp = new V3(), _fl = new V3(), _fw = new V3();
+function flyoverCamera(dt) {
+  const S = track.S, f = careerFly;
+  f.u += dt / 80;   // a full course every 80 seconds, then back to the top
+  if (f.u > 0.92) { f.u = 0.04; f.snap = true; }
+  const k = Math.floor(f.u * (S.length - 1)), s = S[k], q = S[Math.min(S.length - 1, k + 60)];
+  _fw.copy(s.T); _fw.y = 0; _fw.normalize();
+  _fp.copy(s.p).addScaledVector(_fw, -26).add(_t.set(-_fw.z * 14, 22, _fw.x * 14));
+  _fl.set(q.p.x, q.p.y - 6, q.p.z);
+  if (f.snap) { camera.position.copy(_fp); f.look = _fl.clone(); f.snap = false; }
+  const e = 1 - Math.exp(-dt * 1.2);   // heavy easing keeps the drift smooth when the course turns
+  camera.position.lerp(_fp, e); f.look.lerp(_fl, e); camera.lookAt(f.look);
+}
+function renderCareer(dir) {
+  const won = trophiesWon(), page = careerPage, champ = page === CHAMP_PAGE;
+  $('careerCount').textContent = `🏆 ${won} / ${CAREER.length}`;
+  $('careerStrip').innerHTML = CAREER.map((c, i) => `<button role="tab" data-cpage="${i}" aria-selected="${i === page}" aria-label="${c.name}" class="${store.get('trophy-' + c.id) ? 'won' : ''} ${cupOpen(i) ? 'open' : ''}">${c.trophy.icon}</button>`).join('')
+    + `<button role="tab" data-cpage="${CHAMP_PAGE}" aria-selected="${champ}" aria-label="Grand Prix Champion" class="${won === CAREER.length ? 'won open' : ''}">👑</button>`;
+  $('careerPrev').disabled = page === 0; $('careerNext').disabled = page === CHAMP_PAGE;
+  const el = $('careerPage');
+  if (champ) {
+    const d = findMarble('champ'), got = owns(d);
+    el.innerHTML = `<div class="chero"><span class="cn">The final trophy</span><div class="ctro ${got ? 'won' : 'dark'}">👑</div><h2>Grand Prix Champion</h2>
+      <span class="cplate${got ? ' m1' : ''}">${got ? 'Champion!' : `${won} of ${CAREER.length} cup trophies`}</span></div>
+      <div class="cpanel"><div class="cmeta">Finish in the top three of all twelve cups to be crowned champion.</div>
+      <div class="crew">${dotHtml(d)}<span><small>Reward</small>${d.name} the lion</span><em class="${got ? 'got' : ''}">${got ? 'Earned ✓' : 'Mythic · +30% coins'}</em></div></div>`;
+    $('careerGo').hidden = true;
+  } else {
+    const c = CAREER[page], open = cupOpen(page), tr = store.get('trophy-' + c.id), d = cupMarble(c), got = d && owns(d);
+    const route = c.tracks.map((ti, j) => { const t = TRACKS[ti], best = t.random ? 0 : store.get('place-' + t.id) || 0;
+      return `<li class="${best && best <= 3 ? 'p' + best : ''}"><i>${best ? ordinal(best).replace(/[a-z]+$/, '') : j + 1}</i><span>${t.random ? 'Mystery course' : t.name}</span></li>`; }).join('');
+    el.innerHTML = `<div class="chero"><span class="cn">Cup ${page + 1} of ${CAREER.length}</span><div class="ctro ${tr ? 'won' : 'dark'}">${c.trophy.icon}</div><h2>${c.name}</h2>
+      <span class="cplate${tr ? ' m' + tr : ''}">${tr ? `${['Gold', 'Silver', 'Bronze'][tr - 1]} ${c.trophy.name}` : `Win the ${c.trophy.name}`}</span></div>
+      <div class="cpanel"><div class="cmeta"><span class="diff ${c.dc}">${c.diff}</span><span>${c.blurb}</span></div>
+      <ol class="croute">${route}</ol>
+      ${d ? `<div class="crew">${dotHtml(d)}<span><small>Reward</small>${d.name}</span><em class="${got ? 'got' : ''}">${got ? 'Earned ✓' : 'Top 3 to earn'}</em></div>` : ''}
+      ${open ? '' : `<div class="clock">🔒 Finish in the top three of the ${CAREER[page - 1].name} to open this cup</div>`}</div>`;
+    $('careerGo').hidden = false; $('careerGo').disabled = !open;
+    $('careerGo').textContent = !open ? 'Locked' : tr === 1 ? 'Race again' : tr ? 'Go for gold' : 'Start cup';
+  }
+  el.classList.remove('in-l', 'in-r');
+  if (dir) { void el.offsetWidth; el.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
+}
+function careerGoTo(p) {
+  p = clamp(p, 0, CHAMP_PAGE); if (p === careerPage) return;
+  const dir = p > careerPage ? 1 : -1; careerPage = p; sfx.ui(); renderCareer(dir); careerBackdrop(false);
+}
+$('careerPrev').addEventListener('click', () => careerGoTo(careerPage - 1));
+$('careerNext').addEventListener('click', () => careerGoTo(careerPage + 1));
+$('careerStrip').addEventListener('click', e => { const b = e.target.closest('[data-cpage]'); if (b) careerGoTo(+b.dataset.cpage); });
+$('careerBack').addEventListener('click', () => { sfx.ui(); closeCareer(); });
+{ let x0 = null, y0 = 0;
+  $('careerStage').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  $('careerStage').addEventListener('touchend', e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) careerGoTo(careerPage + (dx < 0 ? 1 : -1)); }, { passive: true }); }
+$('careerGo').addEventListener('click', () => {
+  if (careerPage === CHAMP_PAGE || !cupOpen(careerPage)) return;
+  sfx.ui(); mode = 'gp'; selCup = CUPS.indexOf(CAREER[careerPage]); gp = null;
+  careerFly = null; careerReturn = true; $('career').hidden = true; startRace();
+});
+// Grand Prix opens the career map
+$('tabGP').addEventListener('click', () => openCareer());
 // on phones, a tap on Race takes the browser fullscreen (the installed app already is)
 function goFullscreen() {
   const d = document.documentElement;
@@ -3343,9 +3540,14 @@ function showPodium() {
   if (myPlace <= 3) setTimeout(() => flash('#ffe680', 0.35), 100);
   gp = null;
 }
-$('btnPodiumDone').addEventListener('click', () => { sfx.ui(); $('podium').hidden = true; $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles(); });
+$('btnPodiumDone').addEventListener('click', () => {
+  sfx.ui(); $('podium').hidden = true;
+  if (careerReturn) { careerReturn = false; openCareer(careerStartPage()); }
+  else { $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles(); }
+  if (unlockedNow.length) setTimeout(showUnlocks, 450);
+});
 $('btnShop2').addEventListener('click', () => { state = 'menu'; $('results').hidden = true; $('hud').hidden = true; openShop(); });
-$('btnMenu').addEventListener('click', async () => { await money.maybeInterstitial(); if (net) leaveRoom(''); gp = null; state = 'menu'; $('results').hidden = true; $('hud').hidden = true; $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles(); });
+$('btnMenu').addEventListener('click', async () => { await money.maybeInterstitial(); if (net) leaveRoom(''); gp = null; careerReturn = false; state = 'menu'; $('results').hidden = true; $('hud').hidden = true; $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles(); });
 
 let shopTab = 'featured';
 function openShop(tab) { $('menu').hidden = true; $('shop').hidden = false; $('shopMsg').textContent = ''; if (typeof tab === 'string') shopTab = tab; renderShop(); }
@@ -4134,7 +4336,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space' && !e.repeat) bumpWanted = true;
   if ((e.code === 'KeyE' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) itemWanted = true;
   if (e.code === 'KeyM') { sfx.setMusic(!sfx.prefs.music); syncAudioButtons(); }
-  if (e.code === 'Enter' && state === 'menu') startRace();
+  if (e.code === 'Enter' && state === 'menu' && $('career').hidden) startRace();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -5058,6 +5260,7 @@ function update(dt) {
   // camera
   const s = S[me.idx];
   if (track.arena) { updateArena(track, dt); arenaCamera(dt, me); }
+  else if (state === 'menu' && careerFly) flyoverCamera(dt);
   else if (state === 'menu') {
     menuAng += dt * 0.15;
     const c = S[Math.min(S.length - 1, 20)].p;
@@ -5168,7 +5371,8 @@ function update(dt) {
 
 // headless test hook: run a full race with every marble on autopilot
 window.__dbg = { econ, TRACKS, buildTrack, randomCourse, DS, live: () => ({ marbles, track, state, raceTime, chunks: trackChunks, me: marbles[playerIdx] }),
-  items: { dropBanana, launchBee, beeTarget, useItem, raceOrder, giveItem, niceHit } };
+  items: { dropBanana, launchBee, beeTarget, useItem, raceOrder, giveItem, niceHit },
+  career: { gp: () => gp, showPodium, store, page: () => careerPage } };
 window.__simRace = (ti, maxT = 150, seed) => {
   simulating = !window.__asPlayer;
   selTrack = ti; loadTrack(ti);
