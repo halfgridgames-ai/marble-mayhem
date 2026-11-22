@@ -2166,7 +2166,7 @@ function showBackdrop(name, hz, dir) {
   if (b && b.ready) return put(b.tex);
   if (b) { b.wait.push(put); return; }
   b = backdropTex[name] = { ready: false, wait: [put] };
-  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.jpg', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
+  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.webp', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
     b.ready = true; b.wait.forEach(f => f(tex)); b.wait = []; }, undefined, () => { delete backdropTex[name]; });   // offline and never cached: keep the drawn scenery
 }
 // each landmark returns a group built around (0,0,0) on the ground; big and simple so it reads from far away

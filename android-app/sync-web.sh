@@ -14,11 +14,12 @@ fi
 rm -rf "$DEST"
 mkdir -p "$DEST"
 # The service worker is pointless inside the app (files are already local) and
-# can serve stale code after an update, so it is left out. README.md is docs only.
+# can serve stale code after an update, so it is left out. README.md is docs only, and the
+# home-screen icons and manifest are only for the web version (the app has its own launcher icon).
 for f in "$SRC"/*; do
   name="$(basename "$f")"
   case "$name" in
-    sw.js|README.md) continue ;;
+    sw.js|README.md|manifest.webmanifest|icon-192.png|icon-512.png|apple-touch-icon.png) continue ;;   # web-install icons the app never shows
   esac
   cp -R "$f" "$DEST/"
 done
