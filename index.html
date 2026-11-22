@@ -418,6 +418,63 @@ kbd { font-family: var(--body); font-weight: 800; background: rgba(255,255,255,0
 .cgo .go:disabled { background: #3a4570; color: #9aa6c4; box-shadow: 0 5px 0 #222a48; }
 @media (max-height: 700px) { .ctro { width: 92px; font-size: 56px; } .chero h2 { font-size: 28px; } .cpanel { padding: 9px; gap: 7px; } }
 @media (prefers-reduced-motion: reduce) { .ctro, .cpage.in-r, .cpage.in-l { animation: none; } }
+/* ---------- trophies: art on the map, the trophy room shelf and the win reveal ---------- */
+.ctro img, .st .art img, .tbox img { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: contain; display: block; }
+.ctro, .st .art, .tbox { position: relative; }
+.ctro.dark { opacity: 0.7; }
+.ctro.dark img { filter: brightness(0) drop-shadow(0 0 2px rgba(160,190,255,0.55)); }
+.ctro.won { filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45)); }
+button.ccount { color: var(--ink); cursor: pointer; }
+.shelf { z-index: 30; }
+.shelfcard { width: min(520px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 10px; }
+.shelfh { display: flex; align-items: center; gap: 10px; }
+.shelfh > div { flex: 1; } .shelfh small { font-size: 11px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.shelfh h2 { margin: 0; font-family: var(--display); font-size: 26px; }
+.shelves { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; padding: 6px 4px 0; overflow-y: auto; }
+.st { position: relative; border: 0; background: none; color: var(--ink); padding: 0 0 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.st::after { content: ''; position: absolute; left: -6px; right: -6px; bottom: 0; height: 9px; border-radius: 3px; background: linear-gradient(180deg, #b57a45, #7a4a24); box-shadow: 0 4px 6px rgba(0,0,0,0.35); }
+.st .art { width: 100%; aspect-ratio: 1 / 1.1; display: grid; place-items: center; font-size: 40px; }
+.st.dark .art img { filter: brightness(0) drop-shadow(0 0 1px rgba(160,190,255,0.5)); opacity: 0.6; }
+.st .pl { font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center; border-radius: 6px; padding: 2px 5px; background: rgba(255,255,255,0.08); color: var(--ink-dim); min-height: 2.2em; display: grid; place-items: center; }
+.st.m1 .pl { background: linear-gradient(180deg, #ffe680, #e0a419); color: #3a2300; } .st.m2 .pl { background: linear-gradient(180deg, #f2f5fa, #a9b4c4); color: #1c2433; } .st.m3 .pl { background: linear-gradient(180deg, #f2b37a, #b0642a); color: #2a1406; }
+.st.champ .art { filter: drop-shadow(0 0 14px rgba(255,214,90,0.6)); }
+.shelfhint { margin: 0; text-align: center; font-size: 13px; color: var(--ink-dim); }
+@media (max-width: 380px) { .shelves { grid-template-columns: repeat(3, 1fr); } }
+/* the reveal: everything moves with transform and opacity only, and the 3D scene stops drawing underneath */
+.treveal { z-index: 40; background: radial-gradient(circle at 50% 40%, #281e5a, #080a1c 70%); overflow: hidden; flex-direction: column; --tc: #ffd23f; }
+.treveal.m2 { --tc: #e6ecf5; } .treveal.m3 { --tc: #f2a66a; }
+.trays { position: absolute; left: 50%; top: 38%; width: 160vmax; height: 160vmax; margin: -80vmax 0 0 -80vmax; opacity: 0; will-change: transform, opacity;
+  background: repeating-conic-gradient(from 0deg, var(--tc) 0 8deg, transparent 8deg 22deg);
+  -webkit-mask-image: radial-gradient(circle, #000 8%, transparent 55%); mask-image: radial-gradient(circle, #000 8%, transparent 55%); }
+.tstage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 16px; max-width: 420px; }
+.tbox { width: min(72vw, 300px, 42vh); aspect-ratio: 1 / 1.1; position: relative; opacity: 0; will-change: transform, opacity; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.55)); }
+.tbox .glint { position: absolute; inset: 0; overflow: hidden; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+.tbox .glint::before { content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 40%; transform: translateX(-160%) skewX(-18deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent); }
+.tmedal { font-weight: 900; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 99px; padding: 5px 14px; color: #3a2300; background: linear-gradient(180deg, #ffe680, #e0a419); opacity: 0; }
+.treveal.m2 .tmedal { color: #1c2433; background: linear-gradient(180deg, #ffffff, #a9b4c4); } .treveal.m3 .tmedal { color: #2a1406; background: linear-gradient(180deg, #f6c08f, #b0642a); }
+.treveal h1 { margin: 0; font-family: var(--display); font-size: clamp(30px, 8.5vw, 42px); line-height: 1.05; color: var(--tc); text-shadow: 0 3px 0 rgba(0,0,0,0.4); opacity: 0; }
+.treveal p { margin: 0; color: var(--ink-dim); font-weight: 700; opacity: 0; }
+.treveal .go { opacity: 0; margin-top: 6px; }
+.tsparks { position: absolute; left: 50%; top: 32%; width: 0; height: 0; }
+.tsparks i { position: absolute; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: var(--tc); opacity: 0; box-shadow: 0 0 8px var(--tc); }
+.tsparks i:nth-child(3n) { width: 6px; height: 6px; margin: -3px; background: #fff; }
+.treveal.on .trays { animation: tr-rays-in 0.7s ease-out forwards, tr-spin 18s linear infinite; }
+.treveal.on .tbox { animation: tr-pop 0.9s cubic-bezier(.2,1.5,.4,1) 0.15s forwards, tr-bob 3.2s ease-in-out 1.2s infinite; }
+.treveal.on .tbox .glint::before { animation: tr-glint 1.1s ease-in-out 0.95s; }
+.treveal.on .tsparks i { animation: tr-spark 1.1s cubic-bezier(.1,.7,.3,1) 0.45s forwards; }
+.treveal.on .tmedal { animation: tr-up 0.45s cubic-bezier(.2,1.4,.4,1) 0.85s forwards; }
+.treveal.on h1 { animation: tr-up 0.5s ease-out 1s forwards; }
+.treveal.on p { animation: tr-up 0.5s ease-out 1.15s forwards; }
+.treveal.on .go { animation: tr-up 0.5s ease-out 1.5s forwards; }
+@keyframes tr-rays-in { from { opacity: 0; } to { opacity: 0.3; } }
+@keyframes tr-spin { to { transform: rotate(360deg); } }
+@keyframes tr-pop { 0% { opacity: 0; transform: translateY(60px) scale(0.35) rotate(-8deg); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes tr-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes tr-glint { from { transform: translateX(-160%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
+@keyframes tr-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(0.3); } }
+@keyframes tr-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .treveal.on .trays { animation: none; opacity: 0.3; } .treveal.on .tbox, .treveal.on .tbox .glint::before, .treveal.on .tsparks i, .treveal.on .tmedal, .treveal.on h1, .treveal.on p, .treveal.on .go { animation: none; opacity: 1; } .treveal.on .tsparks i { opacity: 0; } }
+
 
 .mdone { margin-top: 8px; color: var(--mint); font-weight: 800; font-size: 14px; }
 #hud .hitpop { position: absolute; left: 50%; top: 30%; transform: translate(-50%, 0); font-family: var(--display); font-size: 34px; color: #ffd23f; text-shadow: 0 3px 0 #b3701a, 0 0 18px rgba(255,210,63,0.6); pointer-events: none; opacity: 0; white-space: nowrap; }
@@ -804,7 +861,7 @@ HGSplash.show();
 
   <div class="overlay career" id="career" hidden>
     <div class="cwrap">
-      <div class="ctop"><button class="cback" id="careerBack" aria-label="Back to the menu">‹</button><div class="ctt"><small>Career</small><b>Grand Prix</b></div><span class="ccount" id="careerCount"></span></div>
+      <div class="ctop"><button class="cback" id="careerBack" aria-label="Back to the menu">‹</button><div class="ctt"><small>Career</small><b>Grand Prix</b></div><button class="ccount" id="careerCount" aria-label="Trophy room"></button></div>
       <div class="cstrip" id="careerStrip" role="tablist" aria-label="Cups"></div>
       <div class="cstage" id="careerStage">
         <button class="carrow l" id="careerPrev" aria-label="Previous cup">‹</button>
@@ -812,6 +869,26 @@ HGSplash.show();
         <button class="carrow r" id="careerNext" aria-label="Next cup">›</button>
       </div>
       <div class="cgo"><button class="go" id="careerGo">Start cup</button></div>
+    </div>
+  </div>
+
+  <div class="overlay shelf" id="shelf" hidden>
+    <div class="card shelfcard">
+      <div class="shelfh"><div><small>Grand Prix</small><h2>Trophy room</h2></div><span class="ccount" id="shelfCount"></span><button class="ghost small" id="shelfDone">Done</button></div>
+      <div class="shelves" id="shelfGrid"></div>
+      <p class="shelfhint">Tap a trophy you've won to lift it off the shelf.</p>
+    </div>
+  </div>
+
+  <div class="overlay treveal" id="trophyReveal" hidden>
+    <div class="trays" aria-hidden="true"></div>
+    <div class="tstage">
+      <div class="tsparks" id="trSparks" aria-hidden="true"></div>
+      <div class="tbox" id="trBox"></div>
+      <div class="tmedal" id="trMedal"></div>
+      <h1 id="trTitle"></h1>
+      <p id="trSub"></p>
+      <button class="go" id="trDone">Continue</button>
     </div>
   </div>
 
@@ -3338,7 +3415,7 @@ function openCareer(page) {
   sfx.init();
   careerPage = page ?? careerStartPage();
   $('menu').hidden = true; $('career').hidden = false; state = 'menu';
-  renderCareer(0); careerBackdrop(true);
+  preloadTrophies(); renderCareer(0); careerBackdrop(true);
   // trophies won before the map existed hand over their marbles the first time the map opens
   checkUnlocks(); if (unlockedNow.length && $('boxOverlay').hidden) { renderCareer(0); setTimeout(showUnlocks, 600); }
 }
@@ -3370,6 +3447,15 @@ function flyoverCamera(dt) {
   const e = 1 - Math.exp(-dt * 1.2);   // heavy easing keeps the drift smooth when the course turns
   camera.position.lerp(_fp, e); f.look.lerp(_fl, e); camera.lookAt(f.look);
 }
+// the Midjourney trophies live in web/trophies; the emoji stands in if a picture can't load
+const CHAMP_CUP = { id: 'champion', name: 'Grand Prix', trophy: { name: 'Grand Prix Champion', icon: '👑' } };
+const trophySrc = c => `trophies/${c.id === 'champion' ? 'champions' : c.id}.webp`;
+const trophyArt = c => `<img src="${trophySrc(c)}" alt="" decoding="async" draggable="false" onerror="this.replaceWith('${c.trophy.icon}')">`;
+const trophyPics = [];
+function preloadTrophies() {
+  if (trophyPics.length) return;
+  for (const c of CAREER.concat(CHAMP_CUP)) { const im = new Image(); im.src = trophySrc(c); if (im.decode) im.decode().catch(() => {}); trophyPics.push(im); }
+}
 function renderCareer(dir) {
   const won = trophiesWon(), page = careerPage, champ = page === CHAMP_PAGE;
   $('careerCount').textContent = `🏆 ${won} / ${CAREER.length}`;
@@ -3379,7 +3465,7 @@ function renderCareer(dir) {
   const el = $('careerPage');
   if (champ) {
     const d = findMarble('champ'), got = owns(d);
-    el.innerHTML = `<div class="chero"><span class="cn">The final trophy</span><div class="ctro ${got ? 'won' : 'dark'}">👑</div><h2>Grand Prix Champion</h2>
+    el.innerHTML = `<div class="chero"><span class="cn">The final trophy</span><div class="ctro ${got ? 'won' : 'dark'}">${trophyArt(CHAMP_CUP)}</div><h2>Grand Prix Champion</h2>
       <span class="cplate${got ? ' m1' : ''}">${got ? 'Champion!' : `${won} of ${CAREER.length} cup trophies`}</span></div>
       <div class="cpanel"><div class="cmeta">Finish in the top three of all twelve cups to be crowned champion.</div>
       <div class="crew">${dotHtml(d)}<span><small>Reward</small>${d.name} the lion</span><em class="${got ? 'got' : ''}">${got ? 'Earned ✓' : 'Mythic · +30% coins'}</em></div></div>`;
@@ -3388,7 +3474,7 @@ function renderCareer(dir) {
     const c = CAREER[page], open = cupOpen(page), tr = store.get('trophy-' + c.id), d = cupMarble(c), got = d && owns(d);
     const route = c.tracks.map((ti, j) => { const t = TRACKS[ti], best = t.random ? 0 : store.get('place-' + t.id) || 0;
       return `<li class="${best && best <= 3 ? 'p' + best : ''}"><i>${best ? ordinal(best).replace(/[a-z]+$/, '') : j + 1}</i><span>${t.random ? 'Mystery course' : t.name}</span></li>`; }).join('');
-    el.innerHTML = `<div class="chero"><span class="cn">Cup ${page + 1} of ${CAREER.length}</span><div class="ctro ${tr ? 'won' : 'dark'}">${c.trophy.icon}</div><h2>${c.name}</h2>
+    el.innerHTML = `<div class="chero"><span class="cn">Cup ${page + 1} of ${CAREER.length}</span><div class="ctro ${tr ? 'won' : 'dark'}">${trophyArt(c)}</div><h2>${c.name}</h2>
       <span class="cplate${tr ? ' m' + tr : ''}">${tr ? `${['Gold', 'Silver', 'Bronze'][tr - 1]} ${c.trophy.name}` : `Win the ${c.trophy.name}`}</span></div>
       <div class="cpanel"><div class="cmeta"><span class="diff ${c.dc}">${c.diff}</span><span>${c.blurb}</span></div>
       <ol class="croute">${route}</ol>
@@ -3408,6 +3494,47 @@ $('careerPrev').addEventListener('click', () => careerGoTo(careerPage - 1));
 $('careerNext').addEventListener('click', () => careerGoTo(careerPage + 1));
 $('careerStrip').addEventListener('click', e => { const b = e.target.closest('[data-cpage]'); if (b) careerGoTo(+b.dataset.cpage); });
 $('careerBack').addEventListener('click', () => { sfx.ui(); closeCareer(); });
+function renderShelf() {
+  const champ = trophiesWon() === CAREER.length;
+  $('shelfCount').textContent = `🏆 ${trophiesWon()} / ${CAREER.length}`;
+  $('shelfGrid').innerHTML = CAREER.map(c => { const m = store.get('trophy-' + c.id);
+    return `<button class="st ${m ? 'm' + m : 'dark'}" data-shelf="${c.id}" ${m ? '' : 'disabled'} aria-label="${c.trophy.name}${m ? ', ' + ['gold', 'silver', 'bronze'][m - 1] : ', not won yet'}"><span class="art">${trophyArt(c)}</span><span class="pl">${m ? c.trophy.name : '?'}</span></button>`; }).join('')
+    + `<button class="st champ ${champ ? 'm1' : 'dark'}" data-shelf="champion" ${champ ? '' : 'disabled'} aria-label="Grand Prix Champion"><span class="art">${trophyArt(CHAMP_CUP)}</span><span class="pl">${champ ? 'Champion' : '?'}</span></button>`;
+}
+$('careerCount').addEventListener('click', () => { sfx.ui(); preloadTrophies(); renderShelf(); $('shelf').hidden = false; });
+$('shelfDone').addEventListener('click', () => { sfx.ui(); $('shelf').hidden = true; });
+$('shelf').addEventListener('click', e => {
+  if (e.target === $('shelf')) { $('shelf').hidden = true; return; }
+  const b = e.target.closest('[data-shelf]'); if (!b || b.disabled) return;
+  const id = b.dataset.shelf, c = id === 'champion' ? CHAMP_CUP : CUPS.find(k => k.id === id);
+  showTrophyReveal(c, id === 'champion' ? 1 : store.get('trophy-' + id), false);
+});
+// ---------- the win reveal ----------
+// It covers the whole screen, so the 3D scene stops drawing underneath until it closes; that keeps it smooth on slow phones.
+let pause3D = false, trTimer = 0;
+const trQueue = [];
+function showTrophyReveal(c, place, fresh) {
+  const el = $('trophyReveal');
+  if (!el.hidden) { trQueue.push([c, place, fresh]); return; }
+  const champ = c.id === 'champion', medal = ['Gold', 'Silver', 'Bronze'][place - 1];
+  const pic = trophyPics.find(im => im.src.endsWith(trophySrc(c)));
+  $('trBox').innerHTML = trophyArt(c) + `<span class="glint" style="-webkit-mask-image:url(${trophySrc(c)});mask-image:url(${trophySrc(c)})"></span>`;
+  $('trMedal').textContent = champ ? 'All twelve cups' : medal;
+  $('trTitle').textContent = champ ? 'Grand Prix Champion!' : fresh ? `You won the ${c.trophy.name}!` : c.trophy.name;
+  $('trSub').textContent = champ ? 'Every trophy is on your shelf. Champ the lion is yours.' : fresh ? `${medal} in the ${c.name}. It's on your trophy shelf now.` : `${medal} in the ${c.name}.`;
+  $('trSparks').innerHTML = Array.from({ length: 18 }, (_, k) => `<i style="--a:${Math.round(k * 20 + (k % 3) * 7)}deg;--d:${110 + (k * 37) % 90}px"></i>`).join('');
+  el.className = 'overlay treveal m' + place; el.hidden = false;
+  const go = () => { void el.offsetWidth; el.classList.add('on'); sfx.finish && sfx.finish(true); clearTimeout(trTimer); trTimer = setTimeout(() => { pause3D = true; }, 750); };
+  // decode the picture first so it never pops in half-drawn
+  (pic && pic.decode ? pic.decode().catch(() => {}) : Promise.resolve()).then(() => requestAnimationFrame(go));
+}
+$('trDone').addEventListener('click', () => {
+  sfx.ui(); clearTimeout(trTimer); pause3D = false;
+  const el = $('trophyReveal'); el.hidden = true; el.classList.remove('on');
+  if (trQueue.length) return setTimeout(() => showTrophyReveal(...trQueue.shift()), 120);
+  if (unlockedNow.length && $('podium').hidden && $('boxOverlay').hidden) setTimeout(showUnlocks, 250);
+  if (!$('shelf').hidden) renderShelf();
+});
 { let x0 = null, y0 = 0;
   $('careerStage').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
   $('careerStage').addEventListener('touchend', e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
@@ -3542,7 +3669,11 @@ function showPodium() {
   const prize = myPlace <= 3 ? Math.round(CUP_PRIZE[myPlace - 1] * (DIFF_MUL[gp.cup.diff] || 1)) : 0;
   econ.coins += prize; econ.save();
   const tkey = 'trophy-' + gp.cup.id, prev = store.get(tkey);
-  if (myPlace <= 3 && (!prev || myPlace < prev)) store.set(tkey, myPlace);
+  if (myPlace <= 3 && (!prev || myPlace < prev)) {
+    const before = trophiesWon(), cup = gp.cup;
+    store.set(tkey, myPlace); preloadTrophies();
+    setTimeout(() => { showTrophyReveal(cup, myPlace, true); if (before < CAREER.length && trophiesWon() === CAREER.length) showTrophyReveal(CHAMP_CUP, 1, true); }, 1400);
+  }
   checkUnlocks();
   state = 'menu'; $('results').hidden = true; $('hud').hidden = true; $('podium').hidden = false;
   $('pTitle').textContent = myPlace === 1 ? `${gp.cup.name} champion!` : myPlace <= 3 ? `${ordinal(myPlace)} in the ${gp.cup.name}` : `${ordinal(myPlace)} overall`;
@@ -3558,7 +3689,7 @@ $('btnPodiumDone').addEventListener('click', () => {
   sfx.ui(); $('podium').hidden = true;
   if (careerReturn) { careerReturn = false; openCareer(careerStartPage()); }
   else { $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles(); }
-  if (unlockedNow.length) setTimeout(showUnlocks, 450);
+  if (unlockedNow.length && $('trophyReveal').hidden) setTimeout(showUnlocks, 450);
 });
 $('btnShop2').addEventListener('click', () => { state = 'menu'; $('results').hidden = true; $('hud').hidden = true; openShop(); });
 $('btnMenu').addEventListener('click', async () => { await money.maybeInterstitial(); if (net) leaveRoom(''); gp = null; careerReturn = false; state = 'menu'; $('results').hidden = true; $('hud').hidden = true; $('menu').hidden = false; renderMenu(); finishOrder = []; createMarbles(); });
@@ -5188,7 +5319,7 @@ function frame(now) {
   if (!window.__fixedDt) governDpr(dt);
   if (track) { updateCelebration(dt); update(dt * slowMo); }
   if (window.__cam) window.__cam(camera, track);   // test hook: preview shots pick their own camera
-  renderer.render(scene, camera);
+  if (!pause3D) renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 function update(dt) {
@@ -5397,7 +5528,7 @@ function update(dt) {
 // headless test hook: run a full race with every marble on autopilot
 window.__dbg = { econ, TRACKS, buildTrack, randomCourse, DS, live: () => ({ marbles, track, state, raceTime, chunks: trackChunks, me: marbles[playerIdx] }),
   items: { dropBanana, launchBee, beeTarget, useItem, raceOrder, giveItem, niceHit },
-  career: { gp: () => gp, showPodium, store, page: () => careerPage } };
+  career: { gp: () => gp, showPodium, store, page: () => careerPage, reveal: showTrophyReveal, CUPS, paused: () => pause3D } };
 window.__simRace = (ti, maxT = 150, seed) => {
   simulating = !window.__asPlayer;
   selTrack = ti; loadTrack(ti);
