@@ -2166,7 +2166,7 @@ function showBackdrop(name, hz, dir) {
   if (b && b.ready) return put(b.tex);
   if (b) { b.wait.push(put); return; }
   b = backdropTex[name] = { ready: false, wait: [put] };
-  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.jpg', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
+  b.tex = new THREE.TextureLoader().load('backdrops/' + name + '.webp', tex => { tex.encoding = THREE.sRGBEncoding; tex.wrapS = THREE.MirroredRepeatWrapping; tex.repeat.x = 2; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
     b.ready = true; b.wait.forEach(f => f(tex)); b.wait = []; }, undefined, () => { delete backdropTex[name]; });   // offline and never cached: keep the drawn scenery
 }
 // each landmark returns a group built around (0,0,0) on the ground; big and simple so it reads from far away
@@ -4423,12 +4423,14 @@ $('dailyClaim').addEventListener('click', () => claimDaily(false));
 const LN = () => (PLATFORM !== 'web' && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LocalNotifications) || null;
 const REM_IDS = [101, 102, 103];
 function remAt(days) { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(18, 0, 0, 0); return d; }
+// isExactNotification: false: a day-ahead reminder needs no exact alarm. Left at the plugin's default (true),
+// every schedule() call on Android 12+ opened the system 'Alarms and reminders' screen.
 function remList() {
   const ds = dailyState(), day = ds.claimed ? ds.streak % 7 + 1 : 1;
   return [
-    { id: 101, title: 'Your daily reward is ready 🪙', body: `Day ${day} reward: ${DAILY[day - 1]} coins. ${day > 1 ? 'Keep your streak rolling!' : 'Roll in and grab it.'}`, schedule: { at: remAt(1) } },
-    { id: 102, title: 'Your marble is gathering dust 🔮', body: 'A fresh shop deal and your daily coins are waiting. One quick race?', schedule: { at: remAt(3) } },
-    { id: 103, title: 'The track misses you 🏁', body: 'Your best times are still there to beat. Come back for a quick race.', schedule: { at: remAt(7) } },
+    { id: 101, title: 'Your daily reward is ready 🪙', body: `Day ${day} reward: ${DAILY[day - 1]} coins. ${day > 1 ? 'Keep your streak rolling!' : 'Roll in and grab it.'}`, schedule: { at: remAt(1) }, isExactNotification: false },
+    { id: 102, title: 'Your marble is gathering dust 🔮', body: 'A fresh shop deal and your daily coins are waiting. One quick race?', schedule: { at: remAt(3) }, isExactNotification: false },
+    { id: 103, title: 'The track misses you 🏁', body: 'Your best times are still there to beat. Come back for a quick race.', schedule: { at: remAt(7) }, isExactNotification: false },
   ];
 }
 async function remSchedule(ask) {
