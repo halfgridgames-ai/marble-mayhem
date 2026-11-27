@@ -516,6 +516,21 @@ button.ccount { color: var(--ink); cursor: pointer; }
   .promo .big-emoji { font-size: 40px; top: 6px; right: 8px; }
   .promo h3, #shopBox p { padding-right: 44px; }
 }
+/* left-handed: steer with the left thumb, so bump + item move to the right and the speed readout to the left */
+.coarse.lefty #hud .bump { left: auto; right: 20px; }
+.coarse.lefty #hud .itemslot { left: auto; right: 126px; }
+.coarse.lefty #hud .hud-speed { right: auto; left: 14px; }
+@media (max-height: 500px), (max-width: 640px) { .coarse.lefty #hud .itemslot { right: 118px; } }
+@media (max-width: 640px) and (min-height: 501px) { .coarse.lefty #hud .itemslot { right: 28px; } }
+/* first play: which thumb steers? */
+#handPick { z-index: 60; background: rgba(12,18,41,0.72); }
+#handPick h1 { margin: 0; }
+.hands { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 4px 0 14px; }
+.hands button { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 8px 12px; border-radius: 18px; border: 2px solid var(--line); background: rgba(255,255,255,0.05); color: var(--ink); font-weight: 800; font-size: 15px; }
+.hands button:active, .hands button:focus-visible { border-color: var(--gold); background: rgba(255,197,49,0.12); }
+.hands small { color: var(--ink-dim); font-weight: 700; font-size: 12px; }
+.mphone { width: 84px; height: 140px; display: block; }
+#handSkip { display: block; margin: 0 auto; }
 /* portrait-only game: on a phone held sideways, ask to turn it upright */
 #rotate { display: none; position: fixed; inset: 0; z-index: 1000; background: #141c3a; color: #fff; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: var(--display); font-size: 26px; text-align: center; }
 #rotate svg { width: 64px; height: 64px; }
@@ -843,18 +858,31 @@ HGSplash.show();
     </div>
   </div>
 
+  <div class="overlay" id="handPick" hidden>
+    <div class="card narrow" role="dialog" aria-labelledby="handTitle">
+      <h1 id="handTitle">Which thumb steers?</h1>
+      <p class="tag">Pick the side that feels best. You can swap it any time in Settings.</p>
+      <div class="hands">
+        <button id="handRight"><svg class="mphone" viewBox="0 0 84 140" aria-hidden="true"><defs><linearGradient id="mpg0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a7bd5"/><stop offset="1" stop-color="#1d3a72"/></linearGradient></defs><rect x="2" y="2" width="80" height="136" rx="14" fill="url(#mpg0)" stroke="rgba(255,255,255,0.6)" stroke-width="3"/><circle cx="58" cy="110" r="15" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/><circle cx="58" cy="110" r="8" fill="#ffc531"/><circle cx="22" cy="116" r="11" fill="#ff4d4d"/><circle cx="32" cy="90" r="8" fill="#fff" opacity="0.85"/></svg>Right thumb<small>Bump + item on the left</small></button>
+        <button id="handLeft"><svg class="mphone" viewBox="0 0 84 140" aria-hidden="true"><defs><linearGradient id="mpg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a7bd5"/><stop offset="1" stop-color="#1d3a72"/></linearGradient></defs><rect x="2" y="2" width="80" height="136" rx="14" fill="url(#mpg1)" stroke="rgba(255,255,255,0.6)" stroke-width="3"/><circle cx="26" cy="110" r="15" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/><circle cx="26" cy="110" r="8" fill="#ffc531"/><circle cx="62" cy="116" r="11" fill="#ff4d4d"/><circle cx="52" cy="90" r="8" fill="#fff" opacity="0.85"/></svg>Left thumb<small>Bump + item on the right</small></button>
+      </div>
+      <button class="ghost small" id="handSkip">Skip</button>
+    </div>
+  </div>
+
   <div class="overlay" id="settings" hidden>
     <div class="card narrow">
       <h1>Settings</h1>
       <div class="setlist">
         <button class="ghost rate" id="sRate"><span class="ic" aria-hidden="true">★</span>Rate Marble Mayhem</button>
+        <button class="ghost" id="sHand" hidden><span class="ic" aria-hidden="true">⇄</span><span id="sHandTxt">Controls: steer with right thumb</span></button>
         <button class="ghost" id="sAds" hidden><span class="ic" aria-hidden="true">🛡</span>Ad privacy choices</button>
         <button class="ghost" id="sPrivacy"><span class="ic" aria-hidden="true">🔒</span>Privacy policy</button>
         <button class="ghost" id="sTerms"><span class="ic" aria-hidden="true">📄</span>Terms of service</button>
         <button class="ghost" id="sContact"><span class="ic" aria-hidden="true">✉</span>Contact us</button>
       </div>
       <div class="row"><button class="go" id="sBack">Back</button></div>
-      <div class="keys" id="keysHelp">Steer <kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · nudge <kbd>↑</kbd> · brake <kbd>↓</kbd> · camera <kbd>C</kbd><br>bump <kbd>Space</kbd> · use item <kbd>E</kbd> · music <kbd>M</kbd><br>Item boxes come in rows across the track, and bonus ones float over the rim of fast bends and high above jumps. Leaders get defensive items, marbles at the back get the big ones. Hold nudge while using a banana to throw it ahead instead of dropping it. On a phone, use the joystick and the buttons on the left.</div>
+      <div class="keys" id="keysHelp">Steer <kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · nudge <kbd>↑</kbd> · brake <kbd>↓</kbd> · camera <kbd>C</kbd><br>bump <kbd>Space</kbd> · use item <kbd>E</kbd> · music <kbd>M</kbd><br>Item boxes come in rows across the track, and bonus ones float over the rim of fast bends and high above jumps. Leaders get defensive items, marbles at the back get the big ones. Hold nudge while using a banana to throw it ahead instead of dropping it. On a phone, steer with one thumb and use the bump and item buttons with the other. Settings lets you swap sides.</div>
       <p class="foot">Marble Mayhem: Downhill Dash · Half Grid Games</p>
     </div>
   </div>
@@ -3556,6 +3584,7 @@ function goFullscreen() {
   try { d.requestFullscreen({ navigationUI: 'hide' }).then(lock, () => {}); } catch (e) {}
 }
 function startRace() {
+  if (askHand(startRace)) return;
   sfx.init(); goFullscreen();
   if (trial) { if (trial.used) endTrial(); else trial.used = true; }
   $('menu').hidden = true; $('results').hidden = true; $('podium').hidden = true; $('hud').hidden = false;
@@ -4537,6 +4566,28 @@ function doBump(m) {
 const coarse = matchMedia('(pointer: coarse)').matches;
 if (coarse) document.getElementById('app').classList.add('coarse');
 else { joyEl.hidden = true; bumpEl.hidden = true; joyZone.hidden = true; }
+// which thumb steers: 'right' (default: bump + item on the left) or 'left' (mirrored). Asked once on a phone's first race.
+function applyHand() {
+  const left = store.get('hand') === 'left';
+  $('app').classList.toggle('lefty', left);
+  $('sHandTxt').textContent = 'Controls: steer with ' + (left ? 'left' : 'right') + ' thumb';
+}
+let handThen = null;
+function askHand(then) {
+  if (!coarse || store.get('hand') != null) return false;
+  handThen = then; $('handPick').hidden = false; return true;
+}
+function pickHand(h, how) {
+  store.set('hand', h); applyHand(); $('handPick').hidden = true;
+  trackEvent('hand_pick', { hand: h, how });
+  const then = handThen; handThen = null; if (then) then();
+}
+$('handRight').addEventListener('click', () => { sfx.init(); sfx.ui(); pickHand('right', 'pick'); });
+$('handLeft').addEventListener('click', () => { sfx.init(); sfx.ui(); pickHand('left', 'pick'); });
+$('handSkip').addEventListener('click', () => { sfx.init(); sfx.ui(); pickHand('right', 'skip'); });
+$('sHand').hidden = !coarse;
+$('sHand').addEventListener('click', () => { sfx.ui(); store.set('hand', store.get('hand') === 'left' ? 'right' : 'left'); applyHand(); });
+applyHand();
 
 
 // ---------- FX: particles, rings, bolts, shake, flash ----------
